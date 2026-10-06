@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-mudik-purple: #5F429A;
+  --color-mudik-indigo: #263A79;
+  --color-mudik-slate: #465B71;
+  --color-mudik-iris: #45469C;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/* Custom scrollbars and tabular numbers */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

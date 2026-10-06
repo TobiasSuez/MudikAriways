@@ -1,0 +1,7 @@
+{
+  "name": "MUDIK AIRWAYS | Low-Cost Indonesian Airline Prototype",
+  "description": "Interactive prototype for Mudik Airways, an Indonesian low-cost airline. Search flights, select seats, simulate booking, manage reservations, check flight status, and explore destinations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
