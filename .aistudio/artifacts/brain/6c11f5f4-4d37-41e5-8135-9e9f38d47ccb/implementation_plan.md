@@ -1,100 +1,70 @@
-# Custom Flexible Dates & Low-Fare Calendar System
+# Plan de Mejoras de Calidad de Vida (QoL) y Funcionalidades Clave
 
-Comprehensive architectural blueprint and UX design for the custom airline date picker, flexible dates option, and dedicated monthly low-fare calendar view for Mudik Airways.
-
----
-
-## User Review & Critical Decisions
-
-> [!IMPORTANT]
-> The following design choices were confirmed in Phase 1:
-> - **Access Points**: Both an integrated custom calendar popup in the booking widget and a dedicated full-page low-fare calendar view (`/calendario-tarifas`).
-> - **Pricing Display**: Full monthly calendar grid showing daily flight prices in selected currency (`USD` / `IDR`) with green/emerald tags marking the cheapest departure days (`MEJOR PRECIO`).
-> - **Flexible Dates Toggle**: "Mis fechas son flexibles (ver calendario de precios)" checkbox in the flight search widget, which directly navigates to the comparative fare matrix when activated.
+Este plan define las mejoras prioritarias solicitadas para optimizar la experiencia de usuario en **Mudik Airways**, enfocándose en el flujo de reserva con selección interactiva de asientos, filtros avanzados con alertas de tarifas y el servicio de Guías Locales exclusivas de Mudik.
 
 ---
 
-## 1. Overview & Core Concept
+## 1. Cambios Propuestos y Arquitectura
 
-- **What It Does**: Replaces generic browser `<input type="date">` controls with a custom, branded airline calendar. When users search for flights, they can either pick exact travel dates with instant day-rate tooltips or activate the **Flexible Dates** mode to compare fares across full months and choose the most cost-effective travel window.
-- **Target Audience**: Low-cost travelers, holiday planners, and families seeking the best airfare across Indonesian inter-island routes (Jakarta, Bali, Yogyakarta, Lombok, Labuan Bajo, etc.).
-- **Key Value**: Eliminates trial-and-error searches by visually showcasing fare trends, empowering passengers to save money by shifting departure or return by 1–3 days.
+### A. Flujo de Reserva y Mapa Interactivo de Asientos (`SeatMap.tsx` & `BookingFlow.tsx`)
+- **Fuselaje Gráfico Detallado:** Renderizar la silueta del avión con cabina de pilotos, alas, salidas de emergencia con señalética luminosa, baños y galleys.
+- **Detalles del Asiento al Pasar el Cursor o Seleccionar:** 
+  - Espacio para piernas (pitch: 76 cm estándar vs 86 cm extra legroom).
+  - Tipo de ventanilla (alineada con el asiento o sobre el ala).
+  - Servicios incluidos: enchufe universal / USB-C, reclinación y bandeja ergonómica.
+  - Precio desglosado con confirmación inmediata en la barra de pago.
+- **Soporte Multi-pasajero:** Selector de pasajero activo (Adulto 1, Adulto 2...) para asignar asientos distintos a cada viajero sin fricción.
 
----
+### B. Filtros Avanzados y Alertas de Tarifas Bajas (`FlightSearchResults.tsx`)
+- **Filtros Interactivos en Tiempo Real:**
+  - Rango de precios con slider interactivo y visualización del mínimo/máximo.
+  - Franja horaria precisa (Madrugada 00-06h, Mañana 06-12h, Tarde 12-18h, Noche 18-24h).
+  - Vuelos directos vs con escala y tipo de aeronave (Airbus A320 vs Boeing 737-800).
+- **Alerta de Tarifa Baja y Seguimiento de Precios:**
+  - Banner interactivo de tendencia de precios: *"Las tarifas para esta ruta están un 15% más económicas de lo habitual"*.
+  - Modal para activar alertas de precio con ingreso de correo/notificación y umbral deseado de precio.
 
-## 2. User Experience & Visual Design
+### C. Servicio de Guías Locales MudikAirways (`LocalGuidesModal.tsx` & `DestinationsView.tsx`)
+- **Pestaña y Tarjetas de Guías Locales por Destino:**
+  - **Bali (DPS), Yakarta (CGK), Yogyakarta (YIA), Labuan Bajo (LBJ), Lombok (LOP), Medan (KNO)**.
+  - **Recomendaciones de la Tripulación Mudik:** Rutas secretas y miradores recomendados por pilotos y tripulantes de cabina locales.
+  - **Gastronomía Típica:** Platos imperdibles (Nasi Campur Bali, Gudeg Jogja, Rendang Padang), precios promedio y mejores warungs/restaurantes.
+  - **Logística Aeroportuaria:** Medios de transporte honestos (trenes de enlace, tarifas oficiales de taxi, puntos de encuentro Grab).
+  - **Acceso Directo a Reserva:** Botón *"Reservar vuelo a este destino"* que preconfigura automáticamente el buscador.
 
-### A. Integrated Custom Date Picker (Widget Level)
-- **Dual-Month View (Desktop)** / **Single-Month View (Mobile)**.
-- **Interactive Day Tiles**:
-  - Displays day number and indicative starting fare (e.g. `15` with `$58` beneath).
-  - Selected departure and return dates connected by a continuous brand-tinted range bar (`#5F429A` with 15% opacity fill).
-  - Past dates automatically disabled.
-  - Hover states show dynamic route price preview.
-- **Quick Preset Shortcuts**: "Este fin de semana", "Próxima semana", "Mes completo más económico".
-- **Flexible Dates Checkbox**: Inline control next to the date fields stating: `±3 días fechas flexibles · Ver calendario con mejores precios`.
-
-### B. Dedicated Low-Fare Calendar View (`fare-calendar`)
-- **Route & Month Selector**: Allows filtering by Origin, Destination, Trip Type (Ida y Vuelta / Solo Ida), and Month (e.g., Noviembre 2026, Diciembre 2026).
-- **Monthly Fare Grid**:
-  - 7-column grid (Lunes to Domingo).
-  - Each day displays: Date, lowest direct fare, and an emerald `MEJOR PRECIO` highlight for the lowest 20% fares of that month.
-  - Color-coded fare tiers (Lowest = Emerald green, Regular = Neutral slate, Peak = Subdued purple).
-- **Comparative Trip Matrix**: When viewing round-trips, selecting a departure date highlights compatible return dates with total combined savings.
-- **Instant Flight Selection CTA**: Clicking a date instantly updates search parameters and transitions to flight results or booking flow with pre-selected dates.
-
-### C. Visual Identity & Theme
-- **Color Discipline**:
-  - Selected Date: Mudik Royal Purple (`#5F429A`) with crisp white numerals.
-  - Best Price Tags: Subtle emerald pill (`bg-emerald-50 text-emerald-700 font-bold`).
-  - Active Range: Soft indigo tint (`bg-[#5F429A]/10`).
-- **Tabular Numerals**: Strict `tabular-nums font-mono` formatting for price readability.
-- **Responsive Geometry**: Full touch targets ($\ge 44\text{px}$) on mobile devices with smooth horizontal swipe or stacked monthly views.
+### D. Mejoras Globales de Calidad de Vida (QoL)
+- **Barra Flotante de Reserva en Dispositivos Móviles:** Resumen de itinerario y precio siempre visible sin tapar la navegación.
+- **Accesibilidad y Atajos de Teclado:** Soporte para tecla `Escape` en todos los modales y navegación fluida con tabulación.
+- **Validación Amigable de Formularios:** Mensajes contextuales claros en el formulario de pasajeros y métodos de pago.
 
 ---
 
-## 3. Key Product Decisions & Trade-Offs
+## 2. Sistema de Diseño y Lenguaje Visual
 
-- **Decision 1: Native Inputs vs. Zero-Dependency Custom React Calendar**
-  - *Chosen Approach*: Build a bespoke React calendar component without heavy external bundle dependencies.
-  - *Why*: Gives complete control over Mudik brand typography, day pricing badges, bilingual labels (ES/EN), and currency conversions (`USD` vs `IDR`).
-- **Decision 2: Realistic Dynamic Fare Generator**
-  - *Chosen Approach*: Create an algorithm that calculates realistic day-by-day route prices based on seasonality, day of week (weekends vs. mid-week), and historical route averages.
-  - *Why*: Ensures every day of every month renders authentic prices that match the flights shown in the search results and booking engine.
-- **Decision 3: Dual Entry Points**
-  - *Chosen Approach*: Users can open the mini-calendar directly from the homepage search widget OR navigate to the standalone "Calendario de Tarifas" page via navigation menu and widget toggle.
-  - *Why*: Accommodates both fixed-date passengers and bargain-hunting travelers without friction.
+- **Paleta de Colores Mudik Airways:**
+  - Primario Naval: `#263A79` (cabeceras, estructuras sólidas).
+  - Púrpura Real: `#5F429A` (acentos activos, asientos seleccionados, badges de tarifa).
+  - Oro / Ámbar Indonesia: `#D97706` / `#F59E0B` (salidas de emergencia, tips VIP de tripulación).
+  - Verde Esmeralda: `#059669` (precios más bajos y confirmaciones).
+  - Fondo limpio: `#FAF9FD` con tarjetas en `#FFFFFF` y bordes sutiles `neutral-200/90`.
+- **Tipografía y Legibilidad:**
+  - Fuentes limpias y números tabulares (`font-mono` o `tabular-nums`) para precios y horarios de vuelo.
+  - Sin píldoras estáticas saturadas; uso de separadores limpios (`·`, `/`) y jerarquía de pesos tipográficos.
 
 ---
 
-## 4. Technical Architecture & Component Structure
+## 3. Plan de Verificación y Fases
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                       AppContext                            │
-│  - departureDate, returnDate, tripType                      │
-│  - originAirport, destinationAirport                        │
-│  - currency, language, formatPrice()                        │
-│  - isFlexibleDatesEnabled                                   │
-└──────────────┬──────────────────────────────┬───────────────┘
-               │                              │
-               ▼                              ▼
-┌──────────────────────────────┐ ┌────────────────────────────┐
-│      CustomDatePicker        │ │    FareCalendarView        │
-│   (Integrated in Widget)     │ │    (Dedicated Section)     │
-│                              │ │                            │
-│ ├─ Month Navigation (< >)    │ │ ├─ Month & Route Switcher  │
-│ ├─ Dual Month Calendar Grid  │ │ ├─ 30-Day Fare Matrix Grid │
-│ ├─ Day Tile with Price Tag   │ │ ├─ Lowest Fare Badging     │
-│ └─ Flexible Toggle Trigger   │ │ └─ "Reservar Esta Fecha"   │
-└──────────────────────────────┘ └────────────────────────────┘
-```
+1. **Fase 1 (Asientos y Reserva):**
+   - Verificar la selección individual de asientos y el cálculo automático de extras en el precio final.
+   - Comprobar que cambiar de pasajero asigna el asiento correcto en la confirmación.
 
-### Planned File Edits
-1. `src/types/index.ts`: Add `fare-calendar` to `PageView` type; add `DayFare` and `MonthFareData` interfaces.
-2. `src/data/mockData.ts`: Add monthly pricing generator functions reflecting realistic routes.
-3. `src/components/calendar/CustomDatePicker.tsx`: New custom dual-month date picker popover.
-4. `src/components/calendar/FareCalendarView.tsx`: Dedicated full-page monthly low-fare comparison view.
-5. `src/components/home/FlightSearchWidget.tsx`: Integrate the new custom date picker and "Fechas flexibles" link.
-6. `src/components/layout/Navbar.tsx`: Add "Calendario de Tarifas" under the **VIAJAR** dropdown.
-7. `src/App.tsx`: Mount `FareCalendarView` when `currentPage === 'fare-calendar'`.
+2. **Fase 2 (Filtros y Alerta de Tarifas):**
+   - Probar el filtrado por hora, escalas y rango de precio en `FlightSearchResults`.
+   - Probar la interacción del modal de alerta de precios con feedback visual de confirmación.
+
+3. **Fase 3 (Guías Locales MudikAirways):**
+   - Abrir la guía de viaje de al menos 3 destinos emblemáticos y verificar el botón de auto-reserva hacia el destino elegido.
+
+4. **Fase 4 (Compilación y Lint):**
+   - Ejecutar `compile_applet` y `lint_applet` para garantizar cero errores de TypeScript y sintaxis.

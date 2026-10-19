@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { DESTINATIONS } from '../../data/mockData';
 import { DestinationItem } from '../../types';
-import { Compass, Plane, MapPin, Utensils, Check, ArrowRight } from 'lucide-react';
+import { Compass, Plane, MapPin, Utensils, Check, ArrowRight, Sparkles, BookOpen } from 'lucide-react';
+import { LocalGuidesModal } from './LocalGuidesModal';
 
 export const DestinationsView: React.FC = () => {
   const { selectDestinationForSearch, formatPrice, t } = useApp();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('TODOS');
+  const [selectedGuideCode, setSelectedGuideCode] = useState<string | null>(null);
 
   const categories = ['TODOS', 'PLAYAS', 'CULTURA', 'CIUDADES', 'NATURALEZA', 'EXPERIENCIAS'];
 
@@ -18,7 +20,7 @@ export const DestinationsView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#FAF9FD] py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-12">
+      <div className="max-w-7xl mx-auto space-y-10">
         
         {/* Editorial Header */}
         <div className="text-center space-y-3 max-w-3xl mx-auto">
@@ -36,7 +38,35 @@ export const DestinationsView: React.FC = () => {
           </p>
         </div>
 
-        {/* Category Filters (Clean Segmented Controls, No Cliché Pills) */}
+        {/* Feature Highlight Banner: Servicio de Guías Locales */}
+        <div className="bg-gradient-to-r from-[#263A79] via-[#45469C] to-[#5F429A] rounded-3xl p-6 sm:p-8 text-white shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-amber-300 text-xs font-bold uppercase tracking-wider backdrop-blur-xs">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{t('NUEVO: SERVICIO DE GUÍAS LOCALES MUDIK', 'NEW: MUDIK LOCAL INSIDER GUIDES')}</span>
+            </div>
+            <h2 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
+              {t('Consejos genuinos de nuestros capitanes y tripulantes', 'Authentic secrets from our flight captains and crew')}
+            </h2>
+            <p className="text-xs sm:text-sm text-neutral-200 leading-relaxed">
+              {t(
+                'Descubrí los mejores warungs gastronómicos, miradores ocultos sin aglomeraciones y traslados oficiales desde el aeropuerto antes de despegar.',
+                'Discover hidden beaches, authentic warungs, and direct airport transit tips curated by Mudik crew members who live there.'
+              )}
+            </p>
+          </div>
+
+          <button
+            onClick={() => setSelectedGuideCode('DPS')}
+            className="px-6 py-3.5 bg-white text-[#263A79] hover:bg-neutral-100 font-extrabold text-xs tracking-wider uppercase rounded-xl transition-all shadow-md flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          >
+            <Compass className="w-4 h-4 text-[#5F429A]" />
+            <span>{t('VER GUÍAS LOCALES', 'EXPLORE LOCAL GUIDES')}</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Category Filters */}
         <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-bold">
           {categories.map(cat => (
             <button
@@ -113,6 +143,16 @@ export const DestinationsView: React.FC = () => {
                       {dest.localFood.join(' · ')}
                     </div>
                   </div>
+
+                  {/* Quick link to Mudik Local Guide */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGuideCode(dest.code)}
+                    className="w-full py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-amber-600" />
+                    <span>{t(`Ver Guía Local Mudik (${dest.city})`, `Read Mudik Local Guide (${dest.city})`)}</span>
+                  </button>
                 </div>
               </div>
 
@@ -143,6 +183,15 @@ export const DestinationsView: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Local Guides Modal */}
+      {selectedGuideCode && (
+        <LocalGuidesModal
+          isOpen={!!selectedGuideCode}
+          initialDestinationCode={selectedGuideCode}
+          onClose={() => setSelectedGuideCode(null)}
+        />
+      )}
     </div>
   );
 };

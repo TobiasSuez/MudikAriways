@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { DESTINATIONS, EDITORIAL_ARTICLES } from '../../data/mockData';
-import { ArrowRight, Plane, BookOpen, Clock, HeartHandshake } from 'lucide-react';
+import { ArrowRight, Plane, BookOpen, Clock, HeartHandshake, Compass } from 'lucide-react';
 
 export const EditorialDestinations: React.FC = () => {
   const { t, formatPrice, selectDestinationForSearch, navigateTo } = useApp();
@@ -137,13 +137,20 @@ export const EditorialDestinations: React.FC = () => {
                 )}
               </p>
 
-              <div className="pt-2">
+              <div className="pt-2 flex flex-wrap gap-3">
                 <button
                   onClick={() => navigateTo('mudik-destino')}
-                  className="px-6 py-3 bg-white text-[#263A79] hover:bg-neutral-100 text-xs font-bold tracking-wider rounded-xl transition-all shadow-md inline-flex items-center gap-2"
+                  className="px-5 py-3 bg-white text-[#263A79] hover:bg-neutral-100 text-xs font-bold tracking-wider rounded-xl transition-all shadow-md inline-flex items-center gap-2 cursor-pointer"
                 >
                   <span>{t('LEER REVISTA MUDIK DESTINO', 'READ MUDIK DESTINO')}</span>
                   <ArrowRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => navigateTo('destinations')}
+                  className="px-5 py-3 bg-[#5F429A] hover:bg-[#45469C] text-white text-xs font-bold tracking-wider rounded-xl transition-all shadow-md inline-flex items-center gap-2 cursor-pointer"
+                >
+                  <Compass className="w-4 h-4" />
+                  <span>{t('GUÍAS LOCALES MUDIK', 'MUDIK LOCAL GUIDES')}</span>
                 </button>
               </div>
             </div>

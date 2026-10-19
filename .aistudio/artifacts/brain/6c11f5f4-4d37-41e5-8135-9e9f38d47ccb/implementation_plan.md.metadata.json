@@ -1,6 +1,6 @@
 {
-  "summary": "Implementation plan for the Custom Flexible Dates and Low-Fare Calendar system for Mudik Airways, detailing the interactive custom date picker, flexible search toggle, and dedicated monthly fare matrix page.",
-  "updatedAt": "2026-10-19T19:09:56.422303361Z",
+  "summary": "Plan detallado de mejoras de calidad de vida (QoL) y nuevas características para Mudik Airways, priorizando el flujo interactivo de selección de asientos por pasajero y cabina, filtros avanzados con alertas de tarifas bajas y seguimiento de precios, y el nuevo servicio de Guías Locales y Consejos de Tripulación por destino.",
+  "updatedAt": "2026-10-19T20:00:11.259137683Z",
   "requestFeedback": true,
   "userFacing": true
 }

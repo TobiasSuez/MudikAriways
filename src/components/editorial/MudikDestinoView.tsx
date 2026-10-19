@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { EDITORIAL_ARTICLES } from '../../data/mockData';
 import { EditorialArticle } from '../../types';
-import { BookOpen, Clock, MapPin, Sparkles, HeartHandshake, Share2, ArrowLeft } from 'lucide-react';
+import { BookOpen, Clock, MapPin, Sparkles, HeartHandshake, Share2, ArrowLeft, Compass } from 'lucide-react';
+import { LocalGuidesModal } from '../destinations/LocalGuidesModal';
 
 export const MudikDestinoView: React.FC = () => {
-  const { t, navigateTo } = useApp();
+  const { t, navigateTo, selectDestinationForSearch } = useApp();
 
   const [activeArticle, setActiveArticle] = useState<EditorialArticle>(EDITORIAL_ARTICLES[0]);
+  const [isGuidesModalOpen, setIsGuidesModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#FAF9FD] py-12 px-4 sm:px-6 lg:px-8">
@@ -30,6 +32,16 @@ export const MudikDestinoView: React.FC = () => {
               'Cultural essays, secluded temples, and traditional foodways documented with reverence for Indonesia’s living heritage.'
             )}
           </p>
+
+          <div className="pt-2">
+            <button
+              onClick={() => setIsGuidesModalOpen(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#5F429A] text-white text-xs font-bold shadow-md hover:bg-[#45469C] transition-all cursor-pointer"
+            >
+              <Compass className="w-4 h-4" />
+              <span>{t('ABRIR GUÍAS LOCALES Y CONSEJOS DE TRIPULACIÓN', 'OPEN LOCAL GUIDES & CREW INSIDER SECRETS')}</span>
+            </button>
+          </div>
         </div>
 
         {/* Article Selector Navigation Bar */}
@@ -88,15 +100,13 @@ export const MudikDestinoView: React.FC = () => {
 
           {/* Main Prose Paragraphs */}
           <div className="space-y-6 text-sm text-[#334155] leading-relaxed max-w-3xl">
-            {activeArticle.contentParagraphs.map((paragraph, idx) => (
-              <p key={idx} className="first-letter:text-3xl first-letter:font-extrabold first-letter:float-left first-letter:mr-2 first-letter:text-[#5F429A]">
-                {paragraph}
-              </p>
+            {activeArticle.contentParagraphs.map((para, i) => (
+              <p key={i}>{para}</p>
             ))}
           </div>
 
-          {/* Cultural Etiquette & Travel Tip Box */}
-          <div className="bg-neutral-50 rounded-2xl p-6 border border-neutral-200 space-y-2 mt-8">
+          {/* Cultural Tip Box */}
+          <div className="p-6 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold text-[#5F429A] uppercase tracking-wider">
               <HeartHandshake className="w-4 h-4 text-[#5F429A]" />
               <span>{t('ETIQUETA CULTURAL Y VIAJE RESPETUOSO', 'CULTURAL ETIQUETTE & MINDFUL TRAVEL')}</span>
@@ -108,9 +118,13 @@ export const MudikDestinoView: React.FC = () => {
 
           {/* Article Footer with booking CTA */}
           <div className="pt-8 border-t border-neutral-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <span className="text-xs text-[#465B71]">
-              {t('¿Inspirado para tu próximo viaje?', 'Inspired for your next voyage?')}
-            </span>
+            <button
+              onClick={() => setIsGuidesModalOpen(true)}
+              className="text-xs font-bold text-[#5F429A] hover:underline flex items-center gap-1.5"
+            >
+              <Compass className="w-4 h-4" />
+              <span>{t('Consultar secretos de tripulación para este destino', 'View crew insider secrets for this destination')}</span>
+            </button>
 
             <button
               onClick={() => {
@@ -125,6 +139,13 @@ export const MudikDestinoView: React.FC = () => {
         </article>
 
       </div>
+
+      {/* Local Guides Modal */}
+      <LocalGuidesModal
+        isOpen={isGuidesModalOpen}
+        initialDestinationCode="DPS"
+        onClose={() => setIsGuidesModalOpen(false)}
+      />
     </div>
   );
 };

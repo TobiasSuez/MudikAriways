@@ -39,8 +39,22 @@ export const BookingFlow: React.FC = () => {
     formatPrice,
     currentUser,
     navigateTo,
-    t
+    t,
+    passengers
   } = useApp();
+
+  const totalSeatPassengers = Math.max(1, (passengers?.adults || 1) + (passengers?.children || 0));
+  const [activePassengerIndex, setActivePassengerIndex] = useState(0);
+
+  // Multi-passenger assignments
+  const [passengerAssignments, setPassengerAssignments] = useState(() => {
+    return Array.from({ length: totalSeatPassengers }, (_, i) => ({
+      passengerIndex: i,
+      passengerName: i === 0 ? `${passengerDetails.firstName} ${passengerDetails.lastName}` : `Pasajero ${i + 1}`,
+      seatId: i === 0 ? selectedSeat : `${14 + i}B`,
+      priceUSD: i === 0 ? (selectedSeat.startsWith('1') || selectedSeat.startsWith('2') || selectedSeat.startsWith('3') ? 14 : 6) : 6
+    }));
+  });
 
   // Payment method selection state
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'wallet' | 'points'>('card');
@@ -52,15 +66,13 @@ export const BookingFlow: React.FC = () => {
   // Digital wallet choice
   const [selectedWallet, setSelectedWallet] = useState<'gopay' | 'ovo' | 'shopeepay' | 'applepay'>('gopay');
 
-  // Seat price calculation
-  const [seatPriceUSD, setSeatPriceUSD] = useState(
-    selectedSeat.startsWith('1') || selectedSeat.startsWith('2') || selectedSeat.startsWith('3') ? 14 : 6
-  );
+  // Total seat price calculation across all assigned passengers
+  const totalSeatsPriceUSD = passengerAssignments.reduce((acc, p) => acc + p.priceUSD, 0);
 
   // Price breakdown calculations
-  const flightBasePrice = selectedOutboundFlight?.fares[selectedFareTier] || 60;
+  const flightBasePrice = (selectedOutboundFlight?.fares[selectedFareTier] || 60) * totalSeatPassengers;
   const returnBasePrice = tripType === 'roundTrip' && selectedReturnFlight 
-    ? selectedReturnFlight.fares[selectedFareTier] 
+    ? selectedReturnFlight.fares[selectedFareTier] * totalSeatPassengers
     : 0;
 
   let extrasCost = 0;
@@ -71,15 +83,32 @@ export const BookingFlow: React.FC = () => {
   if (extras.priorityBoarding) extrasCost += 7;
   if (extras.inFlightWifi) extrasCost += 9;
 
-  const taxesAndFees = 18;
-  const grandTotal = flightBasePrice + returnBasePrice + seatPriceUSD + extrasCost + taxesAndFees;
+  const taxesAndFees = 18 * totalSeatPassengers;
+  const grandTotal = flightBasePrice + returnBasePrice + totalSeatsPriceUSD + extrasCost + taxesAndFees;
 
   const handleSeatSelected = (seatId: string, price: number) => {
-    setSelectedSeat(seatId);
-    setSeatPriceUSD(price);
+    handleMultiSeatSelect(activePassengerIndex, seatId, price);
+  };
+
+  const handleMultiSeatSelect = (pIndex: number, seatId: string, price: number) => {
+    setPassengerAssignments(prev => {
+      const next = [...prev];
+      next[pIndex] = {
+        ...next[pIndex],
+        seatId,
+        priceUSD: price
+      };
+      return next;
+    });
+    if (pIndex === 0) {
+      setSelectedSeat(seatId);
+    }
   };
 
   const handleConfirmAndPay = () => {
+    // Save combined assigned seats into selectedSeat string
+    const combinedSeats = passengerAssignments.map(p => `${p.passengerName.split(' ')[0]}: ${p.seatId}`).join(' · ');
+    setSelectedSeat(combinedSeats);
     completeBooking(paymentMethod);
     setBookingStep(6); // Step 6 is Confirmation!
   };
@@ -326,6 +355,10 @@ export const BookingFlow: React.FC = () => {
                   <SeatMap 
                     currentSeat={selectedSeat}
                     onSeatSelect={handleSeatSelected}
+                    passengerAssignments={passengerAssignments}
+                    activePassengerIndex={activePassengerIndex}
+                    onSelectPassengerIndex={setActivePassengerIndex}
+                    onMultiSeatSelect={handleMultiSeatSelect}
                   />
 
                   <div className="flex items-center justify-between pt-2">
@@ -740,9 +773,19 @@ export const BookingFlow: React.FC = () => {
                   )}
 
                   {/* Seat Selection */}
-                  <div className="flex items-center justify-between">
-                    <span>{t('Asiento seleccionado', 'Selected seat')} ({selectedSeat})</span>
-                    <span className="font-bold text-[#191A23] tabular-nums">{formatPrice(seatPriceUSD)}</span>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-[#191A23]">
+                        {t('Asientos seleccionados', 'Selected seats')} ({passengerAssignments.length})
+                      </span>
+                      <span className="font-bold text-[#191A23] tabular-nums">{formatPrice(totalSeatsPriceUSD)}</span>
+                    </div>
+                    {passengerAssignments.map(p => (
+                      <div key={p.passengerIndex} className="flex items-center justify-between text-[11px] text-[#465B71] pl-2">
+                        <span>{p.passengerName} (Asiento {p.seatId})</span>
+                        <span className="font-mono tabular-nums">{formatPrice(p.priceUSD)}</span>
+                      </div>
+                    ))}
                   </div>
 
                   {/* Extras */}
