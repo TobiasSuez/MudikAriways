@@ -1,4 +1,4 @@
-import { Airport, Booking, DestinationItem, EditorialArticle, FAQItem, Flight, FlightStatusRecord, MudikMember, Seat } from '../types';
+import { Airport, Booking, DayFare, DestinationItem, EditorialArticle, FAQItem, Flight, FlightStatusRecord, MudikMember, Seat } from '../types';
 
 export const AIRPORTS: Airport[] = [
   { code: 'CGK', city: 'Jakarta', name: 'Soekarno-Hatta International', country: 'Indonesia' },
@@ -563,3 +563,58 @@ export const FAQ_ITEMS: FAQItem[] = [
     answer: 'Puedes solicitar asistencia en silla de ruedas o atención para personas con movilidad reducida sin ningún costo adicional hasta 24 horas antes del vuelo a través de "Gestionar reserva" o llamando a nuestro centro de atención telefónica.',
   },
 ];
+
+export const getMonthFares = (
+  originCode: string,
+  destCode: string,
+  year: number,
+  month: number // 1-12
+): DayFare[] => {
+  let basePrice = 58;
+  const matchDest = DESTINATIONS.find(d => d.code === destCode);
+  if (matchDest) {
+    basePrice = matchDest.priceFromUSD;
+  }
+  
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const dayFares: DayFare[] = [];
+  
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dayOfWeek = new Date(year, month - 1, day).getDay(); // 0 is Sunday, 5 is Friday
+    
+    // Deterministic price variation based on day of week and day number
+    let variation = 0;
+    if (dayOfWeek === 5 || dayOfWeek === 0) { // Friday & Sunday peak
+      variation = 18;
+    } else if (dayOfWeek === 6) { // Saturday
+      variation = 12;
+    } else if (dayOfWeek === 2 || dayOfWeek === 3) { // Tuesday & Wednesday cheapest
+      variation = -8;
+    }
+
+    const seed = (day * 7 + month * 13) % 15;
+    const price = Math.max(34, basePrice + variation + (seed - 7));
+    
+    dayFares.push({
+      date: dateStr,
+      dayNumber: day,
+      priceUSD: price,
+      isLowest: false,
+      isAvailable: true,
+    });
+  }
+
+  // Tag the lowest 25% fares
+  const sortedPrices = [...dayFares].map(d => d.priceUSD).sort((a, b) => a - b);
+  const lowestThreshold = sortedPrices[Math.floor(sortedPrices.length * 0.25)] || sortedPrices[0];
+  
+  dayFares.forEach(d => {
+    if (d.priceUSD <= lowestThreshold) {
+      d.isLowest = true;
+    }
+  });
+
+  return dayFares;
+};
+

@@ -14,7 +14,8 @@ import {
   Coffee, 
   HelpCircle, 
   CheckCircle2,
-  CalendarDays
+  CalendarDays,
+  TrendingDown
 } from 'lucide-react';
 import { PageView } from '../../types';
 
@@ -116,6 +117,16 @@ export const Navbar: React.FC = () => {
                     <div>
                       <div className="font-medium">{t('Mapa de Rutas y Horarios', 'Route Map & Timetable')}</div>
                       <div className="text-xs text-[#465B71]">{t('Red de vuelos interislas', 'Inter-island flight network')}</div>
+                    </div>
+                  </button>
+                  <button 
+                    onClick={() => handleNavClick('fare-calendar')}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm text-[#191A23] hover:bg-[#FAF9FD] hover:text-[#5F429A] transition-colors"
+                  >
+                    <TrendingDown className="w-4 h-4 text-emerald-600" />
+                    <div>
+                      <div className="font-medium text-emerald-700">{t('Calendario de Tarifas', 'Low-Fare Calendar')}</div>
+                      <div className="text-xs text-[#465B71]">{t('Buscá vuelos con fechas flexibles', 'Flexible dates & best prices')}</div>
                     </div>
                   </button>
                 </div>

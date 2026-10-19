@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { MOCK_FLIGHTS } from '../../data/mockData';
+import { MOCK_FLIGHTS, getMonthFares } from '../../data/mockData';
 import { Flight, FareTier } from '../../types';
 import { 
   ArrowLeft, 
@@ -13,7 +13,8 @@ import {
   ShieldCheck, 
   Sparkles, 
   Calendar,
-  AlertCircle
+  AlertCircle,
+  TrendingDown
 } from 'lucide-react';
 
 export const FlightSearchResults: React.FC = () => {
@@ -21,7 +22,9 @@ export const FlightSearchResults: React.FC = () => {
     originAirport,
     destinationAirport,
     departureDate,
+    setDepartureDate,
     returnDate,
+    setReturnDate,
     tripType,
     passengers,
     formatPrice,
@@ -30,7 +33,8 @@ export const FlightSearchResults: React.FC = () => {
     selectedFareTier,
     navigateTo,
     setBookingStep,
-    t
+    t,
+    language
   } = useApp();
 
   // Sort & Filter state
@@ -75,6 +79,28 @@ export const FlightSearchResults: React.FC = () => {
 
   const totalPassengers = passengers.adults + passengers.children + passengers.infants;
 
+  // Generate surrounding days (-3 to +3) based on departureDate
+  const baseDate = departureDate ? new Date(departureDate + 'T00:00:00') : new Date('2026-10-15T00:00:00');
+  const surroundingDays = [-3, -2, -1, 0, 1, 2, 3].map(offset => {
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + offset);
+    const dateStr = d.toISOString().split('T')[0];
+    const month = d.getMonth() + 1;
+    const year = d.getFullYear();
+    const dayFares = getMonthFares(originAirport.code, destinationAirport.code, year, month);
+    const matchFare = dayFares.find(f => f.date === dateStr);
+    const dayOfWeekShort = d.toLocaleDateString(language === 'ES' ? 'es-ES' : 'en-US', { weekday: 'short' });
+    const dayNum = d.getDate();
+    return {
+      date: dateStr,
+      dayNum,
+      dayOfWeekShort,
+      priceUSD: matchFare?.priceUSD || 58,
+      isLowest: matchFare?.isLowest || false,
+      isCurrent: dateStr === departureDate,
+    };
+  });
+
   return (
     <div className="min-h-screen bg-[#FAF9FD] py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -116,6 +142,70 @@ export const FlightSearchResults: React.FC = () => {
             >
               {t('Modificar búsqueda', 'Modify search')}
             </button>
+          </div>
+        </div>
+
+        {/* Flexible Dates Matrix Strip */}
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-neutral-200/90 shadow-sm space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-extrabold uppercase tracking-wider text-[#263A79]">
+                {t('Fechas flexibles (±3 días) · Compara tarifas diarias', 'Flexible dates (±3 days) · Compare daily fares')}
+              </span>
+            </div>
+            <button
+              onClick={() => navigateTo('fare-calendar')}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#5F429A] hover:text-[#45469C] hover:underline cursor-pointer self-start sm:self-auto"
+            >
+              <TrendingDown className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{t('Abrir calendario mensual con todos los precios →', 'Open full monthly calendar →')}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+            {surroundingDays.map((item) => (
+              <button
+                key={item.date}
+                type="button"
+                onClick={() => {
+                  setDepartureDate(item.date);
+                  if (tripType === 'roundTrip' && returnDate && returnDate <= item.date) {
+                    const newRet = new Date(item.date + 'T00:00:00');
+                    newRet.setDate(newRet.getDate() + 7);
+                    setReturnDate(newRet.toISOString().split('T')[0]);
+                  }
+                }}
+                className={`p-2.5 sm:p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col justify-between overflow-hidden min-w-0 ${
+                  item.isCurrent
+                    ? 'bg-[#5F429A] text-white border-[#5F429A] shadow-md ring-2 ring-[#5F429A]/30 scale-[1.02]'
+                    : item.isLowest
+                    ? 'bg-emerald-50/70 border-emerald-300 hover:border-emerald-500 text-emerald-950 hover:bg-emerald-100/50'
+                    : 'bg-neutral-50/70 border-neutral-200 hover:border-[#5F429A] hover:bg-[#FAF9FD]'
+                }`}
+              >
+                <div className="text-[10px] sm:text-[11px] font-bold uppercase truncate">
+                  {item.dayOfWeekShort} <span className="font-extrabold text-xs sm:text-sm">{item.dayNum}</span>
+                </div>
+                <div className="mt-1 min-w-0 overflow-hidden">
+                  <span className={`block text-xs font-bold font-mono tabular-nums truncate ${
+                    item.isCurrent ? 'text-white' : item.isLowest ? 'text-emerald-700 font-extrabold' : 'text-[#263A79]'
+                  }`}>
+                    {formatPrice(item.priceUSD)}
+                  </span>
+                  {item.isLowest && !item.isCurrent && (
+                    <span className="text-[8px] sm:text-[9px] font-extrabold text-emerald-700 uppercase tracking-tight block truncate">
+                      {t('Mejor precio', 'Best fare')}
+                    </span>
+                  )}
+                  {item.isCurrent && (
+                    <span className="text-[8px] sm:text-[9px] font-bold text-white/90 uppercase tracking-tight block truncate">
+                      {t('Seleccionado', 'Selected')}
+                    </span>
+                  )}
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 

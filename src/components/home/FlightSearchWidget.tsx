@@ -13,8 +13,10 @@ import {
   Search, 
   Tag, 
   Check,
-  Armchair
+  Armchair,
+  TrendingDown
 } from 'lucide-react';
+import { CustomDatePicker } from '../calendar/CustomDatePicker';
 
 export const FlightSearchWidget: React.FC = () => {
   const {
@@ -38,8 +40,34 @@ export const FlightSearchWidget: React.FC = () => {
     setIsUsingPoints,
     swapAirports,
     handleSearchFlights,
+    navigateTo,
+    language,
     t
   } = useApp();
+
+  // Helper to format date cleanly so it fits and never overflows
+  const formatDateDisplay = (dateStr: string) => {
+    if (!dateStr) return '—';
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        const d = new Date(year, month, day);
+        if (!isNaN(d.getTime())) {
+          const weekday = d.toLocaleDateString(language === 'ES' ? 'es-ES' : 'en-US', { weekday: 'short' });
+          const monthName = d.toLocaleDateString(language === 'ES' ? 'es-ES' : 'en-US', { month: 'short' });
+          const capWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1).replace('.', '');
+          const capMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1).replace('.', '');
+          return `${capWeekday}, ${day} ${capMonth}`;
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return dateStr;
+  };
 
   // Dropdown popover open states
   const [isOriginOpen, setIsOriginOpen] = useState(false);
@@ -47,6 +75,9 @@ export const FlightSearchWidget: React.FC = () => {
   const [isPassengersOpen, setIsPassengersOpen] = useState(false);
   const [isClassOpen, setIsClassOpen] = useState(false);
   const [showPromoInput, setShowPromoInput] = useState(false);
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [calendarSelectionTarget, setCalendarSelectionTarget] = useState<'departure' | 'return'>('departure');
+  const [isFlexibleDatesChecked, setIsFlexibleDatesChecked] = useState(false);
 
   // Search input filters
   const [originFilter, setOriginFilter] = useState('');
@@ -317,193 +348,258 @@ export const FlightSearchWidget: React.FC = () => {
         </div>
 
         {/* Core Input Grid: Origin, Swap, Destination, Outbound Date, Inbound Date */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
           
-          {/* Origin Airport (Col 1-4) */}
-          <div className="md:col-span-3 relative">
-            <label className="block text-[11px] font-bold tracking-wider text-[#465B71] uppercase mb-1">
-              {t('DESDE', 'FROM')}
-            </label>
-            <button
-              type="button"
-              onClick={() => {
-                setIsOriginOpen(!isOriginOpen);
-                setIsDestOpen(false);
-                setIsPassengersOpen(false);
-                setIsClassOpen(false);
-              }}
-              className="w-full h-14 px-3.5 bg-neutral-50 hover:bg-neutral-100/80 border border-neutral-300 rounded-xl text-left flex items-center justify-between transition-colors focus:ring-2 focus:ring-[#5F429A]/30 focus:border-[#5F429A]"
-            >
-              <div className="overflow-hidden">
-                <div className="font-extrabold text-base text-[#191A23] flex items-center gap-2">
-                  <span>{originAirport.city}</span>
-                  <span className="text-xs font-bold text-[#5F429A] bg-[#5F429A]/10 px-1.5 py-0.5 rounded">
-                    {originAirport.code}
-                  </span>
+          {/* Origin & Destination Pair with Swap (Cols 1-7 on lg) */}
+          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-[1fr,auto,1fr] gap-2 items-end">
+            
+            {/* Origin Airport */}
+            <div className="relative min-w-0">
+              <label className="block text-[11px] font-bold tracking-wider text-[#465B71] uppercase mb-1">
+                {t('DESDE', 'FROM')}
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOriginOpen(!isOriginOpen);
+                  setIsDestOpen(false);
+                  setIsPassengersOpen(false);
+                  setIsClassOpen(false);
+                }}
+                className="w-full h-14 px-3.5 bg-neutral-50 hover:bg-neutral-100/80 border border-neutral-300 rounded-xl text-left flex items-center justify-between transition-colors focus:ring-2 focus:ring-[#5F429A]/30 focus:border-[#5F429A] min-w-0"
+              >
+                <div className="overflow-hidden min-w-0 flex-1 pr-1">
+                  <div className="font-extrabold text-base text-[#191A23] flex items-center gap-1.5 truncate">
+                    <span className="truncate">{originAirport.city}</span>
+                    <span className="text-xs font-bold text-[#5F429A] bg-[#5F429A]/10 px-1.5 py-0.5 rounded shrink-0">
+                      {originAirport.code}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-[#465B71] truncate">{originAirport.name}</div>
                 </div>
-                <div className="text-[11px] text-[#465B71] truncate">{originAirport.name}</div>
-              </div>
-              <ChevronDown className="w-4 h-4 text-neutral-400 shrink-0 ml-1" />
-            </button>
+                <ChevronDown className="w-4 h-4 text-neutral-400 shrink-0 ml-1" />
+              </button>
 
-            {/* Origin Dropdown */}
-            {isOriginOpen && (
-              <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-neutral-200 p-3 z-50">
-                <div className="relative mb-2">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-neutral-400" />
-                  <input
-                    type="text"
-                    value={originFilter}
-                    onChange={e => setOriginFilter(e.target.value)}
-                    placeholder={t('Buscar ciudad o código (p. ej. CGK)...', 'Search city or code...')}
-                    className="w-full pl-8 pr-3 py-2 text-xs bg-neutral-100 rounded-lg border-none focus:ring-1 focus:ring-[#5F429A]"
-                    autoFocus
-                  />
+              {/* Origin Dropdown */}
+              {isOriginOpen && (
+                <div className="absolute top-full left-0 mt-2 w-80 max-w-[90vw] bg-white rounded-xl shadow-2xl border border-neutral-200 p-3 z-50">
+                  <div className="relative mb-2">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-neutral-400" />
+                    <input
+                      type="text"
+                      value={originFilter}
+                      onChange={e => setOriginFilter(e.target.value)}
+                      placeholder={t('Buscar ciudad o código (p. ej. CGK)...', 'Search city or code...')}
+                      className="w-full pl-8 pr-3 py-2 text-xs bg-neutral-100 rounded-lg border-none focus:ring-1 focus:ring-[#5F429A]"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-60 overflow-y-auto space-y-1">
+                    {filteredOriginAirports.map(airport => (
+                      <button
+                        key={airport.code}
+                        type="button"
+                        onClick={() => {
+                          setOriginAirport(airport);
+                          setIsOriginOpen(false);
+                          setOriginFilter('');
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-xs transition-colors hover:bg-[#FAF9FD] ${
+                          originAirport.code === airport.code ? 'bg-[#FAF9FD] text-[#5F429A] font-bold' : 'text-[#191A23]'
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1 pr-2">
+                          <div className="font-semibold truncate">{airport.city} ({airport.code})</div>
+                          <div className="text-[10px] text-[#465B71] truncate">{airport.name}</div>
+                        </div>
+                        <span className="text-[10px] text-[#465B71] shrink-0">{airport.country}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="max-h-60 overflow-y-auto space-y-1">
-                  {filteredOriginAirports.map(airport => (
-                    <button
-                      key={airport.code}
-                      type="button"
-                      onClick={() => {
-                        setOriginAirport(airport);
-                        setIsOriginOpen(false);
-                        setOriginFilter('');
-                      }}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-xs transition-colors hover:bg-[#FAF9FD] ${
-                        originAirport.code === airport.code ? 'bg-[#FAF9FD] text-[#5F429A] font-bold' : 'text-[#191A23]'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-semibold">{airport.city} ({airport.code})</div>
-                        <div className="text-[10px] text-[#465B71] truncate">{airport.name}</div>
-                      </div>
-                      <span className="text-[10px] text-[#465B71]">{airport.country}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Swap Airports Button (Col 5 / Center) */}
-          <div className="md:col-span-1 flex items-end justify-center pb-2">
-            <button
-              type="button"
-              onClick={swapAirports}
-              className="w-10 h-10 rounded-full border border-neutral-300 hover:border-[#5F429A] hover:bg-[#FAF9FD] flex items-center justify-center text-[#263A79] hover:text-[#5F429A] transition-all active:rotate-180"
-              title={t('Intercambiar origen y destino', 'Swap origin & destination')}
-            >
-              <ArrowLeftRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Destination Airport (Col 6-8) */}
-          <div className="md:col-span-3 relative">
-            <label className="block text-[11px] font-bold tracking-wider text-[#465B71] uppercase mb-1">
-              {t('HASTA', 'TO')}
-            </label>
-            <button
-              type="button"
-              onClick={() => {
-                setIsDestOpen(!isDestOpen);
-                setIsOriginOpen(false);
-                setIsPassengersOpen(false);
-                setIsClassOpen(false);
-              }}
-              className="w-full h-14 px-3.5 bg-neutral-50 hover:bg-neutral-100/80 border border-neutral-300 rounded-xl text-left flex items-center justify-between transition-colors focus:ring-2 focus:ring-[#5F429A]/30 focus:border-[#5F429A]"
-            >
-              <div className="overflow-hidden">
-                <div className="font-extrabold text-base text-[#191A23] flex items-center gap-2">
-                  <span>{destinationAirport.city}</span>
-                  <span className="text-xs font-bold text-[#5F429A] bg-[#5F429A]/10 px-1.5 py-0.5 rounded">
-                    {destinationAirport.code}
-                  </span>
-                </div>
-                <div className="text-[11px] text-[#465B71] truncate">{destinationAirport.name}</div>
-              </div>
-              <ChevronDown className="w-4 h-4 text-neutral-400 shrink-0 ml-1" />
-            </button>
-
-            {/* Destination Dropdown */}
-            {isDestOpen && (
-              <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-neutral-200 p-3 z-50">
-                <div className="relative mb-2">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-neutral-400" />
-                  <input
-                    type="text"
-                    value={destFilter}
-                    onChange={e => setDestFilter(e.target.value)}
-                    placeholder={t('Buscar ciudad o código (p. ej. DPS)...', 'Search city or code...')}
-                    className="w-full pl-8 pr-3 py-2 text-xs bg-neutral-100 rounded-lg border-none focus:ring-1 focus:ring-[#5F429A]"
-                    autoFocus
-                  />
-                </div>
-                <div className="max-h-60 overflow-y-auto space-y-1">
-                  {filteredDestAirports.map(airport => (
-                    <button
-                      key={airport.code}
-                      type="button"
-                      onClick={() => {
-                        setDestinationAirport(airport);
-                        setIsDestOpen(false);
-                        setDestFilter('');
-                      }}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-xs transition-colors hover:bg-[#FAF9FD] ${
-                        destinationAirport.code === airport.code ? 'bg-[#FAF9FD] text-[#5F429A] font-bold' : 'text-[#191A23]'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-semibold">{airport.city} ({airport.code})</div>
-                        <div className="text-[10px] text-[#465B71] truncate">{airport.name}</div>
-                      </div>
-                      <span className="text-[10px] text-[#465B71]">{airport.country}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Departure Date */}
-          <div className="md:col-span-2.5">
-            <label className="block text-[11px] font-bold tracking-wider text-[#465B71] uppercase mb-1">
-              {t('SALIDA', 'DEPARTURE')}
-            </label>
-            <div className="relative h-14 bg-neutral-50 hover:bg-neutral-100/80 border border-neutral-300 rounded-xl px-3 flex items-center">
-              <Calendar className="w-4 h-4 text-[#5F429A] mr-2 shrink-0 pointer-events-none" />
-              <input
-                type="date"
-                value={departureDate}
-                onChange={e => setDepartureDate(e.target.value)}
-                min="2026-10-06"
-                className="w-full bg-transparent text-sm font-bold text-[#191A23] focus:outline-none cursor-pointer"
-              />
+              )}
             </div>
+
+            {/* Swap Airports Button (Center) */}
+            <div className="flex items-center justify-center pb-2">
+              <button
+                type="button"
+                onClick={swapAirports}
+                className="w-10 h-10 rounded-full border border-neutral-300 hover:border-[#5F429A] hover:bg-[#FAF9FD] flex items-center justify-center text-[#263A79] hover:text-[#5F429A] transition-all active:rotate-180 shrink-0"
+                title={t('Intercambiar origen y destino', 'Swap origin & destination')}
+              >
+                <ArrowLeftRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Destination Airport */}
+            <div className="relative min-w-0">
+              <label className="block text-[11px] font-bold tracking-wider text-[#465B71] uppercase mb-1">
+                {t('HASTA', 'TO')}
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDestOpen(!isDestOpen);
+                  setIsOriginOpen(false);
+                  setIsPassengersOpen(false);
+                  setIsClassOpen(false);
+                }}
+                className="w-full h-14 px-3.5 bg-neutral-50 hover:bg-neutral-100/80 border border-neutral-300 rounded-xl text-left flex items-center justify-between transition-colors focus:ring-2 focus:ring-[#5F429A]/30 focus:border-[#5F429A] min-w-0"
+              >
+                <div className="overflow-hidden min-w-0 flex-1 pr-1">
+                  <div className="font-extrabold text-base text-[#191A23] flex items-center gap-1.5 truncate">
+                    <span className="truncate">{destinationAirport.city}</span>
+                    <span className="text-xs font-bold text-[#5F429A] bg-[#5F429A]/10 px-1.5 py-0.5 rounded shrink-0">
+                      {destinationAirport.code}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-[#465B71] truncate">{destinationAirport.name}</div>
+                </div>
+                <ChevronDown className="w-4 h-4 text-neutral-400 shrink-0 ml-1" />
+              </button>
+
+              {/* Destination Dropdown */}
+              {isDestOpen && (
+                <div className="absolute top-full left-0 mt-2 w-80 max-w-[90vw] bg-white rounded-xl shadow-2xl border border-neutral-200 p-3 z-50">
+                  <div className="relative mb-2">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-neutral-400" />
+                    <input
+                      type="text"
+                      value={destFilter}
+                      onChange={e => setDestFilter(e.target.value)}
+                      placeholder={t('Buscar ciudad o código (p. ej. DPS)...', 'Search city or code...')}
+                      className="w-full pl-8 pr-3 py-2 text-xs bg-neutral-100 rounded-lg border-none focus:ring-1 focus:ring-[#5F429A]"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-60 overflow-y-auto space-y-1">
+                    {filteredDestAirports.map(airport => (
+                      <button
+                        key={airport.code}
+                        type="button"
+                        onClick={() => {
+                          setDestinationAirport(airport);
+                          setIsDestOpen(false);
+                          setDestFilter('');
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-xs transition-colors hover:bg-[#FAF9FD] ${
+                          destinationAirport.code === airport.code ? 'bg-[#FAF9FD] text-[#5F429A] font-bold' : 'text-[#191A23]'
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1 pr-2">
+                          <div className="font-semibold truncate">{airport.city} ({airport.code})</div>
+                          <div className="text-[10px] text-[#465B71] truncate">{airport.name}</div>
+                        </div>
+                        <span className="text-[10px] text-[#465B71] shrink-0">{airport.country}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
 
-          {/* Return Date */}
-          <div className="md:col-span-2.5">
-            <label className="block text-[11px] font-bold tracking-wider text-[#465B71] uppercase mb-1">
-              {t('REGRESO', 'RETURN')}
-            </label>
-            <div className={`relative h-14 border rounded-xl px-3 flex items-center ${
-              tripType === 'oneWay' 
-                ? 'bg-neutral-100/50 border-neutral-200 opacity-60 cursor-not-allowed' 
-                : 'bg-neutral-50 hover:bg-neutral-100/80 border-neutral-300'
-            }`}>
-              <Calendar className="w-4 h-4 text-[#5F429A] mr-2 shrink-0 pointer-events-none" />
-              <input
-                type="date"
-                value={returnDate}
-                onChange={e => setReturnDate(e.target.value)}
+          {/* Dates Pair (Cols 8-12 on lg) */}
+          <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+            
+            {/* Departure Date Trigger */}
+            <div className="min-w-0">
+              <label className="block text-[11px] font-bold tracking-wider text-[#465B71] uppercase mb-1 truncate">
+                {t('SALIDA', 'DEPARTURE')}
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setCalendarSelectionTarget('departure');
+                  setIsCalendarModalOpen(true);
+                }}
+                className="w-full h-14 px-3.5 bg-neutral-50 hover:bg-neutral-100/80 border border-neutral-300 hover:border-[#5F429A] rounded-xl text-left flex items-center justify-between transition-colors focus:ring-2 focus:ring-[#5F429A]/30 focus:border-[#5F429A] cursor-pointer min-w-0"
+              >
+                <div className="overflow-hidden min-w-0 flex-1 pr-2">
+                  <div className="font-extrabold text-sm text-[#191A23] truncate">
+                    {formatDateDisplay(departureDate || '2026-10-15')}
+                  </div>
+                  <div className="text-[10px] text-[#465B71] truncate">
+                    {t('Ver tarifas por día', 'View daily fares')}
+                  </div>
+                </div>
+                <Calendar className="w-4 h-4 text-[#5F429A] shrink-0" />
+              </button>
+            </div>
+
+            {/* Return Date Trigger */}
+            <div className="min-w-0">
+              <label className="text-[11px] font-bold tracking-wider text-[#465B71] uppercase mb-1 truncate flex items-center justify-between">
+                <span>{t('REGRESO', 'RETURN')}</span>
+                {tripType === 'roundTrip' && departureDate && returnDate && returnDate >= departureDate && (
+                  <span className="text-[10px] text-[#5F429A] font-extrabold normal-case bg-[#5F429A]/10 px-1.5 py-0.5 rounded">
+                    {Math.round((new Date(returnDate + 'T00:00:00').getTime() - new Date(departureDate + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24)) + 1} {t('días', 'days')}
+                  </span>
+                )}
+              </label>
+              <button
+                type="button"
                 disabled={tripType === 'oneWay'}
-                min={departureDate}
-                className="w-full bg-transparent text-sm font-bold text-[#191A23] focus:outline-none cursor-pointer disabled:cursor-not-allowed"
-              />
+                onClick={() => {
+                  if (tripType === 'roundTrip') {
+                    setCalendarSelectionTarget('return');
+                    setIsCalendarModalOpen(true);
+                  }
+                }}
+                className={`w-full h-14 px-3.5 border rounded-xl text-left flex items-center justify-between transition-colors min-w-0 ${
+                  tripType === 'oneWay'
+                    ? 'bg-neutral-100/50 border-neutral-200 opacity-60 cursor-not-allowed'
+                    : 'bg-neutral-50 hover:bg-neutral-100/80 border-neutral-300 hover:border-[#5F429A] focus:ring-2 focus:ring-[#5F429A]/30 focus:border-[#5F429A] cursor-pointer'
+                }`}
+              >
+                <div className="overflow-hidden min-w-0 flex-1 pr-2">
+                  <div className="font-extrabold text-sm text-[#191A23] truncate">
+                    {tripType === 'oneWay' ? '—' : formatDateDisplay(returnDate || '2026-10-22')}
+                  </div>
+                  <div className="text-[10px] text-[#465B71] truncate">
+                    {tripType === 'oneWay' ? t('Solo ida seleccionado', 'One way selected') : t('Ver tarifas por día', 'View daily fares')}
+                  </div>
+                </div>
+                <Calendar className="w-4 h-4 text-[#5F429A] shrink-0" />
+              </button>
             </div>
+
           </div>
 
+        </div>
+
+        {/* Flexible Dates Callout Bar (User Feature Requirement!) */}
+        <div className="bg-gradient-to-r from-emerald-50 via-[#FAF9FD] to-purple-50/50 p-3.5 rounded-xl border border-emerald-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isFlexibleDatesChecked}
+              onChange={e => {
+                setIsFlexibleDatesChecked(e.target.checked);
+                if (e.target.checked) {
+                  navigateTo('fare-calendar');
+                }
+              }}
+              className="w-4 h-4 accent-[#5F429A] rounded cursor-pointer"
+            />
+            <span className="font-bold text-[#263A79]">
+              {t('Mis fechas son flexibles (±3 días)', 'My dates are flexible (±3 days)')}
+            </span>
+            <span className="text-emerald-700 font-semibold hidden md:inline">
+              · {t('Encontrá pasajes más baratos comparando días', 'Find cheaper tickets by comparing days')}
+            </span>
+          </label>
+
+          <button
+            type="button"
+            onClick={() => navigateTo('fare-calendar')}
+            className="inline-flex items-center gap-1.5 font-extrabold text-[#5F429A] hover:text-[#45469C] hover:underline whitespace-nowrap self-start sm:self-auto cursor-pointer"
+          >
+            <TrendingDown className="w-3.5 h-3.5 text-emerald-600" />
+            <span>{t('Abrir Calendario de Precios Completo →', 'Open Full Low-Fare Calendar →')}</span>
+          </button>
         </div>
 
         {/* Promo code toggle & Primary CTA Button */}
@@ -558,6 +654,13 @@ export const FlightSearchWidget: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Custom Airline Date Picker Modal */}
+      <CustomDatePicker
+        isOpen={isCalendarModalOpen}
+        onClose={() => setIsCalendarModalOpen(false)}
+        selectionMode={calendarSelectionTarget}
+      />
     </div>
   );
 };

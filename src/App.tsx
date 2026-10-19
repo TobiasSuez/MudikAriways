@@ -24,6 +24,7 @@ import { BaggageView } from './components/baggage/BaggageView';
 import { HelpCenterView } from './components/help/HelpCenterView';
 import { AccountDashboardView } from './components/auth/AccountDashboardView';
 import { AuthModal } from './components/auth/AuthModal';
+import { FareCalendarView } from './components/calendar/FareCalendarView';
 
 const MainContent: React.FC = () => {
   const { currentPage } = useApp();
@@ -43,6 +44,7 @@ const MainContent: React.FC = () => {
       {currentPage === 'check-in' && <CheckInView />}
       {currentPage === 'flight-status' && <FlightStatusView />}
       {currentPage === 'flight-schedules' && <FlightScheduleView />}
+      {currentPage === 'fare-calendar' && <FareCalendarView />}
       {currentPage === 'mudik-points' && <MudikPointsView />}
       {currentPage === 'destinations' && <DestinationsView />}
       {currentPage === 'mudik-destino' && <MudikDestinoView />}

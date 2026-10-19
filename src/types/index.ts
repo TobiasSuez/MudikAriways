@@ -156,6 +156,14 @@ export interface FAQItem {
   answer: string;
 }
 
+export interface DayFare {
+  date: string; // YYYY-MM-DD
+  dayNumber: number;
+  priceUSD: number;
+  isLowest?: boolean;
+  isAvailable: boolean;
+}
+
 export type PageView = 
   | 'home'
   | 'search-results'
@@ -164,6 +172,7 @@ export type PageView =
   | 'check-in'
   | 'flight-status'
   | 'flight-schedules'
+  | 'fare-calendar'
   | 'mudik-points'
   | 'destinations'
   | 'mudik-destino'
