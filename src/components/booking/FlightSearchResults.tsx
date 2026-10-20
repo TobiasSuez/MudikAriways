@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { MOCK_FLIGHTS, getMonthFares } from '../../data/mockData';
-import { Flight, FareTier } from '../../types';
+import { MOCK_FLIGHTS, AIRPORTS, getMonthFares } from '../../data/mockData';
+import { Flight, FareTier, Airport } from '../../types';
 import { 
   ArrowLeft, 
   Plane, 
@@ -20,7 +20,10 @@ import {
   CheckCircle2,
   Filter,
   DollarSign,
-  Info
+  Info,
+  ArrowRight,
+  MapPin,
+  CalendarDays
 } from 'lucide-react';
 
 export const FlightSearchResults: React.FC = () => {
@@ -32,6 +35,9 @@ export const FlightSearchResults: React.FC = () => {
     returnDate,
     setReturnDate,
     tripType,
+    multiCitySegments,
+    selectedMultiCityFlights,
+    setSelectedMultiCityFlights,
     passengers,
     formatPrice,
     setSelectedOutboundFlight,
@@ -43,6 +49,10 @@ export const FlightSearchResults: React.FC = () => {
     language
   } = useApp();
 
+  // Multi-city active segment state
+  const [activeSegmentIndex, setActiveSegmentIndex] = useState<number>(0);
+  const [multiCitySuccessToast, setMultiCitySuccessToast] = useState<string | null>(null);
+
   // Sort & Filter state
   const [sortBy, setSortBy] = useState<'price' | 'duration' | 'departure'>('price');
   const [filterStops, setFilterStops] = useState<'all' | 'direct'>('all');
@@ -50,7 +60,7 @@ export const FlightSearchResults: React.FC = () => {
   const [filterAircraft, setFilterAircraft] = useState<'all' | 'A320' | 'B737'>('all');
   const [maxPrice, setMaxPrice] = useState<number>(200);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
-  const [expandedFlightId, setExpandedFlightId] = useState<string | null>(MOCK_FLIGHTS[0].id);
+  const [expandedFlightId, setExpandedFlightId] = useState<string | null>(null);
 
   // Price Alert state
   const [isAlertModalOpen, setIsAlertModalOpen] = useState<boolean>(false);
@@ -58,23 +68,103 @@ export const FlightSearchResults: React.FC = () => {
   const [alertTargetPrice, setAlertTargetPrice] = useState<number>(65);
   const [alertCreated, setAlertCreated] = useState<boolean>(false);
 
-  // Available mock flights
-  const availableFlights = MOCK_FLIGHTS.filter(f => {
-    const matchRoute = f.origin.code === originAirport.code && f.destination.code === destinationAirport.code;
-    return matchRoute || true; // ensure user always gets flight results for prototype experience
-  });
+  // Active route calculation (Single trip or Current Multi-City segment)
+  const isMultiCity = tripType === 'multiCity';
+  const currentSegment = isMultiCity 
+    ? (multiCitySegments[activeSegmentIndex] || multiCitySegments[0])
+    : null;
+
+  const activeOrigin: Airport = isMultiCity && currentSegment ? currentSegment.origin : originAirport;
+  const activeDest: Airport = isMultiCity && currentSegment ? currentSegment.destination : destinationAirport;
+  const activeDate: string = isMultiCity && currentSegment ? currentSegment.departureDate : departureDate;
+
+  // Build available flights dynamically for the active route
+  const getFlightsForRoute = (orig: Airport, dest: Airport): Flight[] => {
+    // Check if MOCK_FLIGHTS has flights matching this pair
+    const directMatches = MOCK_FLIGHTS.filter(
+      f => f.origin.code === orig.code && f.destination.code === dest.code
+    );
+
+    if (directMatches.length > 0) {
+      return directMatches;
+    }
+
+    // Synthesize 4 realistic scheduled flights for any pair in Indonesia
+    return [
+      {
+        id: `synth-${orig.code}-${dest.code}-1`,
+        flightNumber: `MDK ${Math.floor(200 + Math.random() * 600)}`,
+        origin: orig,
+        destination: dest,
+        departureTime: '07:15',
+        arrivalTime: '09:05',
+        duration: '1h 50m',
+        isDirect: true,
+        stopsCount: 0,
+        aircraft: 'Airbus A320neo',
+        fares: { basic: 49, smart: 72, flex: 105 },
+        baggageIncluded: 'Equipaje de mano 7 kg',
+      },
+      {
+        id: `synth-${orig.code}-${dest.code}-2`,
+        flightNumber: `MDK ${Math.floor(200 + Math.random() * 600)}`,
+        origin: orig,
+        destination: dest,
+        departureTime: '10:40',
+        arrivalTime: '12:35',
+        duration: '1h 55m',
+        isDirect: true,
+        stopsCount: 0,
+        aircraft: 'Boeing 737-800',
+        fares: { basic: 58, smart: 79, flex: 115 },
+        baggageIncluded: 'Equipaje de mano 7 kg',
+      },
+      {
+        id: `synth-${orig.code}-${dest.code}-3`,
+        flightNumber: `MDK ${Math.floor(200 + Math.random() * 600)}`,
+        origin: orig,
+        destination: dest,
+        departureTime: '15:20',
+        arrivalTime: '17:10',
+        duration: '1h 50m',
+        isDirect: true,
+        stopsCount: 0,
+        aircraft: 'Airbus A320neo',
+        fares: { basic: 64, smart: 85, flex: 124 },
+        baggageIncluded: 'Equipaje de mano 7 kg',
+      },
+      {
+        id: `synth-${orig.code}-${dest.code}-4`,
+        flightNumber: `MDK ${Math.floor(200 + Math.random() * 600)}`,
+        origin: orig,
+        destination: dest,
+        departureTime: '19:45',
+        arrivalTime: '21:35',
+        duration: '1h 50m',
+        isDirect: true,
+        stopsCount: 0,
+        aircraft: 'Airbus A320-200',
+        fares: { basic: 52, smart: 74, flex: 108 },
+        baggageIncluded: 'Equipaje de mano 7 kg',
+      },
+    ];
+  };
+
+  const availableFlights = getFlightsForRoute(activeOrigin, activeDest);
 
   // Filter flights
   const filteredFlights = availableFlights.filter(f => {
     // Stops
     if (filterStops === 'direct' && !f.isDirect) return false;
-    
-    // Time windows
-    const hour = parseInt(f.departureTime.split(':')[0], 10);
-    if (filterTime === 'early' && hour >= 6) return false;
-    if (filterTime === 'morning' && (hour < 6 || hour >= 12)) return false;
-    if (filterTime === 'afternoon' && (hour < 12 || hour >= 18)) return false;
-    if (filterTime === 'evening' && hour < 18) return false;
+
+    // Time of day
+    if (filterTime !== 'all') {
+      const hour = parseInt(f.departureTime.split(':')[0], 10);
+      if (filterTime === 'early' && hour >= 6) return false;
+      if (filterTime === 'morning' && (hour < 6 || hour >= 12)) return false;
+      if (filterTime === 'afternoon' && (hour < 12 || hour >= 18)) return false;
+      if (filterTime === 'evening' && hour < 18) return false;
+    }
 
     // Aircraft
     if (filterAircraft === 'A320' && !f.aircraft.includes('A320')) return false;
@@ -94,10 +184,75 @@ export const FlightSearchResults: React.FC = () => {
     return 0;
   });
 
+  // Handle Flight and Fare Selection
   const handleSelectFlightAndFare = (flight: Flight, tier: FareTier) => {
-    setSelectedOutboundFlight(flight);
-    setSelectedFareTier(tier);
-    setBookingStep(2); // Go to Passenger Info in Booking Flow
+    if (isMultiCity && currentSegment) {
+      // Multi-City Leg Selection
+      const updatedSelections = [...selectedMultiCityFlights];
+      const existingIdx = updatedSelections.findIndex(s => s.segmentId === currentSegment.id);
+
+      const newSelectionItem = {
+        segmentId: currentSegment.id,
+        segmentIndex: activeSegmentIndex,
+        origin: currentSegment.origin,
+        destination: currentSegment.destination,
+        departureDate: currentSegment.departureDate,
+        flight,
+        fareTier: tier,
+      };
+
+      if (existingIdx >= 0) {
+        updatedSelections[existingIdx] = newSelectionItem;
+      } else {
+        updatedSelections.push(newSelectionItem);
+      }
+
+      setSelectedMultiCityFlights(updatedSelections);
+
+      // Toast feedback
+      const toastMsg = language === 'ES' 
+        ? `✓ Tramo ${activeSegmentIndex + 1} (${currentSegment.origin.code} → ${currentSegment.destination.code}) seleccionado: ${flight.flightNumber} (${tier.toUpperCase()})`
+        : `✓ Leg ${activeSegmentIndex + 1} (${currentSegment.origin.code} → ${currentSegment.destination.code}) confirmed: ${flight.flightNumber} (${tier.toUpperCase()})`;
+      setMultiCitySuccessToast(toastMsg);
+      setTimeout(() => setMultiCitySuccessToast(null), 3500);
+
+      // Check if there are more legs to configure
+      if (activeSegmentIndex < multiCitySegments.length - 1) {
+        setActiveSegmentIndex(activeSegmentIndex + 1);
+        window.scrollTo({ top: 120, behavior: 'smooth' });
+      }
+    } else {
+      // Standard One-Way / Round-Trip Selection
+      setSelectedOutboundFlight(flight);
+      setSelectedFareTier(tier);
+      setBookingStep(2); // Go to Passenger Info in Booking Flow
+      navigateTo('booking');
+    }
+  };
+
+  const handleFinishMultiCityBooking = () => {
+    // If not all segments are selected, pick default first flight for any unselected segments
+    const finalSelections = [...selectedMultiCityFlights];
+    multiCitySegments.forEach((seg, idx) => {
+      const exists = finalSelections.find(s => s.segmentId === seg.id);
+      if (!exists) {
+        const routeFlights = getFlightsForRoute(seg.origin, seg.destination);
+        finalSelections.push({
+          segmentId: seg.id,
+          segmentIndex: idx,
+          origin: seg.origin,
+          destination: seg.destination,
+          departureDate: seg.departureDate,
+          flight: routeFlights[0],
+          fareTier: 'smart',
+        });
+      }
+    });
+
+    setSelectedMultiCityFlights(finalSelections);
+    setSelectedOutboundFlight(finalSelections[0]?.flight || availableFlights[0]);
+    setSelectedFareTier(finalSelections[0]?.fareTier || 'smart');
+    setBookingStep(2); // Go to Passenger Info
     navigateTo('booking');
   };
 
@@ -117,18 +272,17 @@ export const FlightSearchResults: React.FC = () => {
   };
 
   const isAnyFilterActive = filterStops !== 'all' || filterTime !== 'all' || filterAircraft !== 'all' || maxPrice < 200;
-
   const totalPassengers = passengers.adults + passengers.children + passengers.infants;
 
-  // Generate surrounding days (-3 to +3) based on departureDate
-  const baseDate = departureDate ? new Date(departureDate + 'T00:00:00') : new Date('2026-10-15T00:00:00');
+  // Surrounding days calculation (-3 to +3)
+  const baseDate = activeDate ? new Date(activeDate + 'T00:00:00') : new Date('2026-10-15T00:00:00');
   const surroundingDays = [-3, -2, -1, 0, 1, 2, 3].map(offset => {
     const d = new Date(baseDate);
     d.setDate(d.getDate() + offset);
     const dateStr = d.toISOString().split('T')[0];
     const month = d.getMonth() + 1;
     const year = d.getFullYear();
-    const dayFares = getMonthFares(originAirport.code, destinationAirport.code, year, month);
+    const dayFares = getMonthFares(activeOrigin.code, activeDest.code, year, month);
     const matchFare = dayFares.find(f => f.date === dateStr);
     const dayOfWeekShort = d.toLocaleDateString(language === 'ES' ? 'es-ES' : 'en-US', { weekday: 'short' });
     const dayNum = d.getDate();
@@ -136,343 +290,480 @@ export const FlightSearchResults: React.FC = () => {
       date: dateStr,
       dayNum,
       dayOfWeekShort,
-      priceUSD: matchFare?.priceUSD || 58,
+      priceUSD: matchFare?.priceUSD || 54,
       isLowest: matchFare?.isLowest || false,
-      isCurrent: dateStr === departureDate,
+      isCurrent: dateStr === activeDate,
     };
   });
 
+  // Calculate multi-city total confirmed price
+  const multiCityTotalCost = selectedMultiCityFlights.reduce(
+    (sum, item) => sum + (item.flight.fares[item.fareTier] || 60), 0
+  );
+
+  const allMultiCityLegsSelected = isMultiCity && multiCitySegments.every(seg => 
+    selectedMultiCityFlights.some(s => s.segmentId === seg.id)
+  );
+
   return (
-    <div className="min-h-screen bg-[#FAF9FD] py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#FAF9FD] py-6 sm:py-10 px-3 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Navigation back and header summary */}
-        <div className="bg-white rounded-2xl p-6 border border-neutral-200/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-neutral-200/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
             <button
               onClick={() => navigateTo('home')}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#465B71] hover:text-[#5F429A] transition-colors mb-2"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#465B71] hover:text-[#5F429A] transition-colors mb-2 cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>{t('Volver a modificar búsqueda', 'Back to search criteria')}</span>
             </button>
-            <div className="flex items-center gap-3">
-              <h1 className="font-display text-2xl sm:text-3xl font-black text-[#263A79] tracking-tight">
-                {originAirport.city} ({originAirport.code})
-              </h1>
-              <span className="text-[#5F429A] font-bold text-xl">→</span>
-              <h1 className="font-display text-2xl sm:text-3xl font-black text-[#263A79] tracking-tight">
-                {destinationAirport.city} ({destinationAirport.code})
-              </h1>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-[#465B71]">
-              <span>{departureDate}</span>
-              {tripType === 'roundTrip' && returnDate && (
-                <>
+
+            {isMultiCity ? (
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#5F429A]/10 text-[#5F429A] text-xs font-black uppercase tracking-wider">
+                  <Plane className="w-3.5 h-3.5" />
+                  <span>{t('VIAJE MULTIDESTINO', 'MULTI-CITY TRIP')} · {multiCitySegments.length} {t('TRAMOS', 'LEGS')}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xl sm:text-2xl font-black text-[#263A79]">
+                  {multiCitySegments.map((s, idx) => (
+                    <React.Fragment key={s.id}>
+                      <span className="font-mono">{s.origin.code}</span>
+                      <span className="text-[#5F429A]">→</span>
+                      {idx === multiCitySegments.length - 1 && <span className="font-mono">{s.destination.code}</span>}
+                    </React.Fragment>
+                  ))}
+                </div>
+                <p className="text-xs text-[#465B71]">
+                  {totalPassengers} {totalPassengers > 1 ? t('pasajeros', 'passengers') : t('pasajero', 'passenger')} · {t('Selecciona tu vuelo tramo por tramo', 'Select your flights leg by leg')}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                  <h1 className="font-display text-2xl sm:text-3xl font-black text-[#263A79] tracking-tight">
+                    {originAirport.city} ({originAirport.code})
+                  </h1>
+                  <span className="text-[#5F429A] font-bold text-xl">→</span>
+                  <h1 className="font-display text-2xl sm:text-3xl font-black text-[#263A79] tracking-tight">
+                    {destinationAirport.city} ({destinationAirport.code})
+                  </h1>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-[#465B71]">
+                  <span className="font-semibold text-[#191A23]">{departureDate}</span>
+                  {tripType === 'roundTrip' && returnDate && (
+                    <>
+                      <span>·</span>
+                      <span>{t('Regreso:', 'Return:')} <strong className="text-[#191A23]">{returnDate}</strong></span>
+                    </>
+                  )}
                   <span>·</span>
-                  <span>{t('Regreso:', 'Return:')} {returnDate}</span>
-                </>
-              )}
-              <span>·</span>
-              <span>{totalPassengers} {totalPassengers > 1 ? t('pasajeros', 'passengers') : t('pasajero', 'passenger')}</span>
-              <span>·</span>
-              <span className="font-semibold text-[#5F429A]">{tripType === 'roundTrip' ? t('Ida y vuelta', 'Round trip') : t('Solo ida', 'One-way')}</span>
-            </div>
+                  <span>{totalPassengers} {totalPassengers > 1 ? t('pasajeros', 'passengers') : t('pasajero', 'passenger')}</span>
+                  <span>·</span>
+                  <span className="font-semibold text-[#5F429A]">{tripType === 'roundTrip' ? t('Ida y vuelta', 'Round trip') : t('Solo ida', 'One-way')}</span>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <button
               onClick={() => navigateTo('fare-calendar')}
-              className="px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-xs"
+              className="px-3.5 sm:px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-xs cursor-pointer"
             >
-              <Calendar className="w-4 h-4 text-emerald-600" />
-              <span>{t('Ver Calendario Mensual Completo', 'View Full Fare Calendar')}</span>
+              <Calendar className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{t('Matriz de Precios', 'Fare Calendar')}</span>
             </button>
 
             <button
               onClick={() => setIsAlertModalOpen(true)}
-              className="px-4 py-2.5 bg-[#5F429A]/10 hover:bg-[#5F429A]/20 text-[#5F429A] border border-[#5F429A]/30 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
+              className="px-3.5 sm:px-4 py-2.5 bg-[#5F429A]/10 hover:bg-[#5F429A]/20 text-[#5F429A] border border-[#5F429A]/30 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="w-4 h-4 shrink-0" />
               <span>{alertCreated ? t('Alerta Activa', 'Alert Active') : t('Crear Alerta de Tarifa', 'Set Fare Alert')}</span>
             </button>
           </div>
         </div>
 
-        {/* Low-Fare Trend Alert Banner */}
-        <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-[#263A79] text-white p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-400/30">
-              <TrendingDown className="w-5 h-5" />
+        {/* MULTI-CITY SEGMENT STEPPER TABS (ONLY FOR MULTI-CITY) */}
+        {isMultiCity && (
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-neutral-200/90 shadow-sm space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-[#263A79] flex items-center gap-2">
+                <CalendarDays className="w-4 h-4 text-[#5F429A]" />
+                <span>{t('SELECCIÓN DE VUELOS POR TRAMO', 'LEG-BY-LEG FLIGHT SELECTION')}</span>
+              </span>
+              <span className="text-xs font-bold text-[#5F429A]">
+                {selectedMultiCityFlights.length} / {multiCitySegments.length} {t('tramos elegidos', 'legs selected')}
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-sm text-white">
-                  {t('Tendencia de Precios Mudik: ¡Tarifa un 15% más baja!', 'Mudik Fare Trend: 15% lower than typical!')}
-                </span>
-                <span className="bg-emerald-500 text-emerald-950 font-black text-[9px] px-2 py-0.5 rounded-full uppercase">
-                  {t('Oportunidad', 'Great Deal')}
-                </span>
+
+            {/* Segment Tab Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+              {multiCitySegments.map((seg, idx) => {
+                const isCurrent = activeSegmentIndex === idx;
+                const chosen = selectedMultiCityFlights.find(s => s.segmentId === seg.id);
+
+                return (
+                  <button
+                    key={seg.id}
+                    type="button"
+                    onClick={() => setActiveSegmentIndex(idx)}
+                    className={`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden cursor-pointer ${
+                      isCurrent
+                        ? 'bg-[#5F429A] text-white border-[#5F429A] shadow-md ring-2 ring-[#5F429A]/30'
+                        : chosen
+                        ? 'bg-emerald-50 text-emerald-950 border-emerald-300 hover:border-emerald-400'
+                        : 'bg-neutral-50 text-[#191A23] border-neutral-200 hover:border-[#5F429A]/50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-[11px] font-bold mb-1">
+                      <span className={isCurrent ? 'text-white/80' : 'text-[#465B71]'}>
+                        {t('TRAMO', 'LEG')} {idx + 1}
+                      </span>
+                      {chosen ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded font-black">
+                          <Check className="w-3 h-3" />
+                          <span>{chosen.flight.flightNumber}</span>
+                        </span>
+                      ) : isCurrent ? (
+                        <span className="text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded font-extrabold uppercase">
+                          {t('ELIGIENDO', 'ACTIVE')}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-[#465B71] uppercase">{t('PENDIENTE', 'PENDING')}</span>
+                      )}
+                    </div>
+
+                    <div className="font-extrabold text-sm sm:text-base leading-snug truncate">
+                      {seg.origin.city} ({seg.origin.code}) → {seg.destination.city} ({seg.destination.code})
+                    </div>
+                    <div className={`text-xs mt-0.5 ${isCurrent ? 'text-white/85' : 'text-[#465B71]'}`}>
+                      {seg.departureDate}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Notification Toast */}
+            {multiCitySuccessToast && (
+              <div className="bg-emerald-100 border border-emerald-300 text-emerald-900 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between animate-in fade-in slide-in-from-top-1">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span>{multiCitySuccessToast}</span>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setMultiCitySuccessToast(null)}
+                  className="text-emerald-700 hover:text-emerald-900"
+                >
+                  ✕
+                </button>
               </div>
-              <p className="text-xs text-neutral-200 mt-0.5">
-                {t(
-                  `El precio promedio para volar de ${originAirport.city} a ${destinationAirport.city} ronda los USD 75. Hoy encontrás tarifas desde USD 58.`,
-                  `Typical fares for this route average USD 75. Today you can book from USD 58.`
-                )}
+            )}
+          </div>
+        )}
+
+        {/* ALL LEGS SELECTED CONSOLIDATED SUMMARY (MULTI-CITY) */}
+        {isMultiCity && (allMultiCityLegsSelected || selectedMultiCityFlights.length >= 2) && (
+          <div className="bg-gradient-to-r from-[#263A79] via-[#45469C] to-[#5F429A] rounded-2xl p-5 sm:p-7 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 bg-emerald-400 text-emerald-950 font-black text-[10px] uppercase tracking-wider px-3 py-1 rounded-full">
+                <Check className="w-3.5 h-3.5" />
+                <span>{t('ITINERARIO MULTITRAYECTO CONFIGURADO', 'MULTI-CITY ITINERARY READY')}</span>
+              </div>
+              <h3 className="font-display text-xl sm:text-2xl font-black">
+                {multiCitySegments.length} {t('vuelos seleccionados en tu ruta', 'flights selected for your route')}
+              </h3>
+              <p className="text-xs text-neutral-200">
+                {t('Podés revisar o cambiar cualquier tramo pulsando sobre sus pestañas arriba.', 'You can modify any leg anytime before confirming.')}
               </p>
             </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
+              <div className="text-center sm:text-right">
+                <span className="text-[10px] uppercase tracking-wider text-neutral-300 block">
+                  {t('PRECIO TOTAL ESTIMADO', 'TOTAL ESTIMATED FARE')}
+                </span>
+                <span className="font-mono text-2xl sm:text-3xl font-black text-amber-300">
+                  {formatPrice(multiCityTotalCost || 135)}
+                </span>
+                <span className="text-[10px] text-emerald-300 block">
+                  {t('Incluye todos los tramos e impuestos', 'Includes all legs & taxes')}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleFinishMultiCityBooking}
+                className="w-full sm:w-auto px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-black tracking-wider uppercase rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              >
+                <span>{t('CONTINUAR A ASIENTOS', 'CONTINUE TO SEATS')}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* SURROUNDING DAYS QUICK FARES BAR (Smooth touch horizontal scroll on mobile) */}
+        {!isMultiCity && (
+          <div className="bg-white rounded-2xl p-4 border border-neutral-200/90 shadow-sm space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-[#465B71] px-1">
+              <span>{t('Fechas cercanas (±3 días) con mejor precio garantizado:', 'Nearby dates (±3 days) with lowest fares:')}</span>
+              <span className="text-[11px] text-[#5F429A]">{activeOrigin.code} ⇄ {activeDest.code}</span>
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+              {surroundingDays.map(item => (
+                <button
+                  key={item.date}
+                  type="button"
+                  onClick={() => setDepartureDate(item.date)}
+                  className={`flex-1 min-w-[90px] p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                    item.isCurrent
+                      ? 'bg-[#5F429A] text-white border-[#5F429A] shadow-md'
+                      : 'bg-[#FAF9FD] hover:bg-neutral-100 text-[#191A23] border-neutral-200'
+                  }`}
+                >
+                  <div className="text-[10px] uppercase font-bold tracking-wider opacity-80">
+                    {item.dayOfWeekShort} {item.dayNum}
+                  </div>
+                  <div className="font-mono font-bold text-xs sm:text-sm mt-0.5 tabular-nums">
+                    {formatPrice(item.priceUSD)}
+                  </div>
+                  {item.isLowest && (
+                    <span className={`text-[8px] font-black uppercase px-1 rounded-sm mt-1 inline-block ${
+                      item.isCurrent ? 'bg-white text-[#5F429A]' : 'bg-emerald-600 text-white'
+                    }`}>
+                      {t('MÍNIMO', 'LOW')}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* SECTION HEADER: Current Leg or Single Trip flight options */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="font-display text-xl sm:text-2xl font-black text-[#263A79]">
+              {isMultiCity ? (
+                <span>
+                  {t('Vuelos para el Tramo', 'Flights for Leg')} {activeSegmentIndex + 1}: {activeOrigin.city} ({activeOrigin.code}) → {activeDest.city} ({activeDest.code})
+                </span>
+              ) : (
+                <span>{t('Vuelos de salida disponibles', 'Available departure flights')}</span>
+              )}
+            </h2>
+            <p className="text-xs text-[#465B71]">
+              {sortedFlights.length} {sortedFlights.length === 1 ? t('opción disponible', 'option available') : t('opciones disponibles', 'options available')} · {activeDate}
+            </p>
           </div>
 
+          {/* Quick Filter toggle button for mobile */}
           <button
-            onClick={() => setIsAlertModalOpen(true)}
-            className="self-start sm:self-auto px-4 py-2 bg-white text-[#263A79] hover:bg-neutral-100 rounded-xl text-xs font-bold transition-colors whitespace-nowrap shadow-xs flex items-center gap-1.5"
+            type="button"
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer ${
+              showAdvancedFilters || isAnyFilterActive
+                ? 'bg-[#5F429A] text-white border-[#5F429A]'
+                : 'bg-white text-[#263A79] border-neutral-300 hover:border-[#5F429A]'
+            }`}
           >
-            <Bell className="w-3.5 h-3.5 text-[#5F429A]" />
-            <span>{t('Seguir esta ruta', 'Track this route')}</span>
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>{showAdvancedFilters ? t('Ocultar filtros', 'Hide filters') : t('Filtros avanzados', 'Advanced filters')}</span>
+            {isAnyFilterActive && (
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            )}
           </button>
         </div>
 
-        {/* Surrounding Dates Horizontal Carousel */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 border border-neutral-200/90 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold tracking-wider text-[#465B71] uppercase flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-[#5F429A]" />
-              <span>{t('TARIFAS EN FECHAS CERCANAS (±3 DÍAS)', 'NEARBY DATE FARES (±3 DAYS)')}</span>
-            </span>
-            <span className="text-xs text-[#5F429A] font-semibold">
-              {t('Precios más bajos señalados en verde', 'Lowest fares highlighted in green')}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-7 gap-2">
-            {surroundingDays.map((item) => (
-              <button
-                key={item.date}
-                type="button"
-                onClick={() => setDepartureDate(item.date)}
-                className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
-                  item.isCurrent
-                    ? 'bg-[#5F429A] text-white border-[#5F429A] shadow-md ring-2 ring-[#5F429A]/30 scale-[1.02]'
-                    : item.isLowest
-                    ? 'bg-emerald-50/70 border-emerald-300 hover:border-emerald-500 text-emerald-950 hover:bg-emerald-100/50'
-                    : 'bg-neutral-50/70 border-neutral-200 hover:border-[#5F429A] hover:bg-[#FAF9FD]'
-                }`}
-              >
-                <div className="text-[10px] sm:text-[11px] font-bold uppercase truncate">
-                  {item.dayOfWeekShort} <span className="font-extrabold text-xs sm:text-sm">{item.dayNum}</span>
-                </div>
-                <div className="mt-1 min-w-0 overflow-hidden">
-                  <span className={`block text-xs font-bold font-mono tabular-nums truncate ${
-                    item.isCurrent ? 'text-white' : item.isLowest ? 'text-emerald-700 font-extrabold' : 'text-[#263A79]'
-                  }`}>
-                    {formatPrice(item.priceUSD)}
-                  </span>
-                  {item.isLowest && !item.isCurrent && (
-                    <span className="text-[8px] sm:text-[9px] font-extrabold text-emerald-700 uppercase tracking-tight block truncate">
-                      {t('Mejor precio', 'Best fare')}
-                    </span>
-                  )}
-                  {item.isCurrent && (
-                    <span className="text-[8px] sm:text-[9px] font-bold text-white/90 uppercase tracking-tight block truncate">
-                      {t('Seleccionado', 'Selected')}
-                    </span>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Filter and Sort Toolbar */}
-        <div className="bg-white rounded-2xl p-4 border border-neutral-200/80 shadow-xs space-y-4">
-          
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            {/* Sorting Buttons */}
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="font-bold text-[#465B71] uppercase tracking-wider text-[11px] mr-1">
-                {t('Ordenar por:', 'Sort by:')}
+        {/* ADVANCED FILTER PANEL (Collapsible) */}
+        {showAdvancedFilters && (
+          <div className="bg-white rounded-2xl p-5 border border-[#5F429A]/30 shadow-md space-y-4 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-[#263A79] flex items-center gap-2">
+                <Filter className="w-3.5 h-3.5 text-[#5F429A]" />
+                <span>{t('FILTRAR RESULTADOS', 'FILTER RESULTS')}</span>
               </span>
-              <button
-                onClick={() => setSortBy('price')}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  sortBy === 'price' ? 'bg-[#5F429A] text-white shadow-xs' : 'bg-neutral-100 text-[#263A79] hover:bg-neutral-200'
-                }`}
-              >
-                {t('Precio más bajo', 'Lowest Price')}
-              </button>
-              <button
-                onClick={() => setSortBy('departure')}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  sortBy === 'departure' ? 'bg-[#5F429A] text-white shadow-xs' : 'bg-neutral-100 text-[#263A79] hover:bg-neutral-200'
-                }`}
-              >
-                {t('Hora de salida', 'Departure Time')}
-              </button>
-              <button
-                onClick={() => setSortBy('duration')}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  sortBy === 'duration' ? 'bg-[#5F429A] text-white shadow-xs' : 'bg-neutral-100 text-[#263A79] hover:bg-neutral-200'
-                }`}
-              >
-                {t('Menor duración', 'Shortest Duration')}
-              </button>
-            </div>
-
-            {/* Quick Filters and Advanced Filters Toggle */}
-            <div className="flex items-center gap-2 text-xs">
-              <button
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className={`px-3.5 py-1.5 rounded-lg font-bold border transition-colors flex items-center gap-1.5 ${
-                  showAdvancedFilters || isAnyFilterActive
-                    ? 'bg-[#5F429A] text-white border-[#5F429A]'
-                    : 'bg-neutral-100 text-[#263A79] border-neutral-200 hover:bg-neutral-200'
-                }`}
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>{t('Filtros Avanzados', 'Advanced Filters')}</span>
-                {isAnyFilterActive && (
-                  <span className="w-2 h-2 rounded-full bg-amber-400" />
-                )}
-              </button>
-
               {isAnyFilterActive && (
                 <button
+                  type="button"
                   onClick={resetAllFilters}
-                  className="text-xs text-[#5F429A] hover:underline font-semibold"
+                  className="text-xs text-rose-600 hover:underline font-bold"
                 >
-                  {t('Limpiar', 'Reset')}
+                  {t('Restablecer todos', 'Reset all')}
                 </button>
               )}
             </div>
-          </div>
 
-          {/* Expanded Advanced Filters Panel */}
-          {showAdvancedFilters && (
-            <div className="pt-4 border-t border-neutral-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs animate-in fade-in duration-150">
-              
-              {/* Filter 1: Stops */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+              {/* Stops */}
               <div className="space-y-1.5">
-                <label className="font-bold text-[#465B71] uppercase text-[10px] tracking-wider block">
-                  {t('Escalas', 'Stops')}
+                <label className="font-bold text-[#465B71] uppercase tracking-wider text-[10px] block">
+                  {t('ESCALAS', 'STOPS')}
                 </label>
-                <select
-                  value={filterStops}
-                  onChange={(e) => setFilterStops(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl border border-neutral-200 bg-neutral-50 text-[#263A79] font-medium focus:ring-1 focus:ring-[#5F429A]"
-                >
-                  <option value="all">{t('Todas las escalas', 'All stops')}</option>
-                  <option value="direct">{t('Solo vuelos directos', 'Direct flights only')}</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFilterStops('all')}
+                    className={`flex-1 py-2 rounded-lg font-bold border transition-colors ${
+                      filterStops === 'all'
+                        ? 'bg-[#263A79] text-white border-[#263A79]'
+                        : 'bg-neutral-50 text-[#465B71] border-neutral-200 hover:border-neutral-400'
+                    }`}
+                  >
+                    {t('Todos', 'All')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilterStops('direct')}
+                    className={`flex-1 py-2 rounded-lg font-bold border transition-colors ${
+                      filterStops === 'direct'
+                        ? 'bg-[#263A79] text-white border-[#263A79]'
+                        : 'bg-neutral-50 text-[#465B71] border-neutral-200 hover:border-neutral-400'
+                    }`}
+                  >
+                    {t('Solo directos', 'Direct only')}
+                  </button>
+                </div>
               </div>
 
-              {/* Filter 2: Time Windows */}
+              {/* Time of Day */}
               <div className="space-y-1.5">
-                <label className="font-bold text-[#465B71] uppercase text-[10px] tracking-wider block">
-                  {t('Franja Horaria de Salida', 'Departure Time Window')}
+                <label className="font-bold text-[#465B71] uppercase tracking-wider text-[10px] block">
+                  {t('HORARIO DE SALIDA', 'DEPARTURE TIME')}
                 </label>
                 <select
                   value={filterTime}
-                  onChange={(e) => setFilterTime(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl border border-neutral-200 bg-neutral-50 text-[#263A79] font-medium focus:ring-1 focus:ring-[#5F429A]"
+                  onChange={e => setFilterTime(e.target.value as any)}
+                  className="w-full h-9 px-3 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold text-[#263A79]"
                 >
-                  <option value="all">{t('Cualquier horario', 'Any time of day')}</option>
-                  <option value="early">{t('Madrugada (00:00 - 06:00)', 'Early Morning (00-06h)')}</option>
-                  <option value="morning">{t('Mañana (06:00 - 12:00)', 'Morning (06-12h)')}</option>
-                  <option value="afternoon">{t('Tarde (12:00 - 18:00)', 'Afternoon (12-18h)')}</option>
-                  <option value="evening">{t('Noche (18:00 - 23:59)', 'Evening (18-24h)')}</option>
+                  <option value="all">{t('Cualquier horario', 'Any time')}</option>
+                  <option value="morning">{t('Mañana (06:00 - 12:00)', 'Morning (06:00 - 12:00)')}</option>
+                  <option value="afternoon">{t('Tarde (12:00 - 18:00)', 'Afternoon (12:00 - 18:00)')}</option>
+                  <option value="evening">{t('Noche (18:00 en adelante)', 'Evening (18:00+)')}</option>
                 </select>
               </div>
 
-              {/* Filter 3: Aircraft Type */}
+              {/* Aircraft */}
               <div className="space-y-1.5">
-                <label className="font-bold text-[#465B71] uppercase text-[10px] tracking-wider block">
-                  {t('Tipo de Avión', 'Aircraft Model')}
+                <label className="font-bold text-[#465B71] uppercase tracking-wider text-[10px] block">
+                  {t('FLOTA / AERONAVE', 'AIRCRAFT')}
                 </label>
-                <select
-                  value={filterAircraft}
-                  onChange={(e) => setFilterAircraft(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl border border-neutral-200 bg-neutral-50 text-[#263A79] font-medium focus:ring-1 focus:ring-[#5F429A]"
-                >
-                  <option value="all">{t('Todas las aeronaves', 'All aircraft')}</option>
-                  <option value="A320">Airbus A320 (Mudik Express)</option>
-                  <option value="B737">Boeing 737-800 (Mudik Jet)</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFilterAircraft('all')}
+                    className={`flex-1 py-2 rounded-lg font-bold border transition-colors ${
+                      filterAircraft === 'all'
+                        ? 'bg-[#263A79] text-white border-[#263A79]'
+                        : 'bg-neutral-50 text-[#465B71] border-neutral-200 hover:border-neutral-400'
+                    }`}
+                  >
+                    {t('Todas', 'All')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilterAircraft('A320')}
+                    className={`flex-1 py-2 rounded-lg font-bold border transition-colors ${
+                      filterAircraft === 'A320'
+                        ? 'bg-[#263A79] text-white border-[#263A79]'
+                        : 'bg-neutral-50 text-[#465B71] border-neutral-200 hover:border-neutral-400'
+                    }`}
+                  >
+                    Airbus A320
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilterAircraft('B737')}
+                    className={`flex-1 py-2 rounded-lg font-bold border transition-colors ${
+                      filterAircraft === 'B737'
+                        ? 'bg-[#263A79] text-white border-[#263A79]'
+                        : 'bg-neutral-50 text-[#465B71] border-neutral-200 hover:border-neutral-400'
+                    }`}
+                  >
+                    Boeing 737
+                  </button>
+                </div>
               </div>
 
-              {/* Filter 4: Max Price Slider */}
+              {/* Max Price Slider */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="font-bold text-[#465B71] uppercase text-[10px] tracking-wider">
-                    {t('Precio Máximo', 'Max Price')}
+                  <label className="font-bold text-[#465B71] uppercase tracking-wider text-[10px]">
+                    {t('PRECIO MÁXIMO', 'MAX PRICE')}
                   </label>
-                  <span className="font-mono font-bold text-[#5F429A]">
-                    {formatPrice(maxPrice)}
-                  </span>
+                  <span className="font-mono font-bold text-[#5F429A]">{formatPrice(maxPrice)}</span>
                 </div>
                 <input
                   type="range"
-                  min="50"
+                  min="30"
                   max="200"
                   step="5"
                   value={maxPrice}
-                  onChange={(e) => setMaxPrice(Number(e.target.value))}
-                  className="w-full accent-[#5F429A] cursor-pointer"
+                  onChange={e => setMaxPrice(parseInt(e.target.value, 10))}
+                  className="w-full accent-[#5F429A]"
                 />
               </div>
-
             </div>
-          )}
+          </div>
+        )}
 
-        </div>
-
-        {/* Flight Cards List */}
-        <div className="space-y-6">
+        {/* FLIGHT RESULTS LIST */}
+        <div className="space-y-4">
           {sortedFlights.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 text-center border border-neutral-200 space-y-3">
-              <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
-              <h3 className="font-bold text-lg text-[#263A79]">{t('No encontramos vuelos con esos filtros', 'No flights match your filters')}</h3>
-              <p className="text-xs text-[#465B71]">{t('Prueba ajustando el precio máximo, la franja horaria o el tipo de escala.', 'Try relaxing your filter parameters.')}</p>
+            <div className="bg-white rounded-2xl p-10 text-center space-y-4 border border-neutral-200">
+              <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+              <h3 className="font-bold text-base text-[#263A79]">
+                {t('No encontramos vuelos con esos filtros exactos', 'No flights found with these filters')}
+              </h3>
+              <p className="text-xs text-[#465B71]">
+                {t('Probá restableciendo los filtros o ampliando el rango de precio máximo.', 'Try adjusting your filters or price slider.')}
+              </p>
               <button
+                type="button"
                 onClick={resetAllFilters}
-                className="px-4 py-2 bg-[#5F429A] text-white text-xs font-bold rounded-xl shadow-xs"
+                className="px-5 py-2.5 bg-[#5F429A] text-white text-xs font-bold rounded-xl"
               >
-                {t('Restablecer filtros', 'Reset all filters')}
+                {t('Restablecer filtros', 'Reset filters')}
               </button>
             </div>
           ) : (
-            sortedFlights.map((flight) => {
+            sortedFlights.map(flight => {
               const isExpanded = expandedFlightId === flight.id;
-              
+
               return (
-                <div
+                <div 
                   key={flight.id}
-                  className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden shadow-sm hover:shadow-md ${
-                    isExpanded ? 'border-[#5F429A] ring-1 ring-[#5F429A]/20' : 'border-neutral-200/90'
-                  }`}
+                  className="bg-white rounded-2xl border border-neutral-200/90 shadow-sm hover:shadow-md transition-all overflow-hidden"
                 >
-                  {/* Flight Summary Strip */}
-                  <div className="p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  {/* Top Flight Card Row */}
+                  <div className="p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     
-                    {/* Flight & Airline Details */}
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#5F429A] to-[#263A79] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-                        <Plane className="w-6 h-6 -rotate-45" />
+                    {/* Airline + Flight # + Aircraft badge */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#5F429A] to-[#263A79] flex items-center justify-center text-white shrink-0 shadow-xs">
+                        <Plane className="w-5 h-5 -rotate-45" />
                       </div>
                       <div>
-                        <div className="font-extrabold text-base text-[#263A79] flex items-center gap-2">
+                        <div className="font-bold text-sm text-[#191A23] flex items-center gap-2">
                           <span>{flight.flightNumber}</span>
-                          <span className="text-[11px] font-semibold text-[#5F429A] bg-[#5F429A]/10 px-2 py-0.5 rounded-full">
-                            Mudik Air
+                          <span className="text-[10px] font-semibold bg-neutral-100 text-[#465B71] px-2 py-0.5 rounded-full">
+                            {flight.aircraft}
                           </span>
                         </div>
-                        <div className="text-xs text-[#465B71] mt-0.5">
-                          {flight.aircraft} · {flight.baggageIncluded}
+                        <div className="text-xs text-[#465B71]">
+                          Mudik Airways · {flight.baggageIncluded}
                         </div>
                       </div>
                     </div>
 
-                    {/* Schedule times & duration */}
-                    <div className="flex items-center gap-6 sm:gap-10">
+                    {/* Flight Times & Duration Center Block */}
+                    <div className="flex items-center justify-between sm:justify-center gap-6 sm:gap-10">
                       
                       {/* Departure */}
                       <div className="text-left">
@@ -487,14 +778,13 @@ export const FlightSearchResults: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Flight flight path indicator */}
-                      <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-bold text-[#465B71] mb-1 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>{flight.duration}</span>
+                      {/* Timeline Route bar */}
+                      <div className="flex flex-col items-center min-w-[100px] sm:min-w-[140px]">
+                        <span className="text-[11px] font-semibold text-[#465B71] mb-1">
+                          {flight.duration}
                         </span>
                         
-                        <div className="w-24 sm:w-32 flex items-center">
+                        <div className="w-full flex items-center gap-1.5">
                           <div className="w-2 h-2 rounded-full bg-[#5F429A]" />
                           <div className="h-0.5 flex-1 bg-neutral-300 relative">
                             {flight.isDirect ? (
@@ -544,7 +834,7 @@ export const FlightSearchResults: React.FC = () => {
 
                       <button
                         onClick={() => setExpandedFlightId(isExpanded ? null : flight.id)}
-                        className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shadow-xs ${
+                        className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shadow-xs cursor-pointer ${
                           isExpanded 
                             ? 'bg-[#263A79] text-white' 
                             : 'bg-[#5F429A] hover:bg-[#45469C] text-white'
@@ -559,10 +849,10 @@ export const FlightSearchResults: React.FC = () => {
 
                   {/* Expandable Fare Tiers Matrix (Basic, Smart, Flex) */}
                   {isExpanded && (
-                    <div className="bg-[#FAF9FD] p-6 border-t border-neutral-200">
+                    <div className="bg-[#FAF9FD] p-5 sm:p-6 border-t border-neutral-200">
                       <div className="mb-4">
                         <h4 className="font-bold text-sm text-[#263A79]">
-                          {t('Elegí tu paquete de tarifa Mudik', 'Choose your Mudik fare package')}
+                          {t('Elegí tu paquete de tarifa Mudik para este tramo', 'Choose your Mudik fare package')}
                         </h4>
                         <p className="text-xs text-[#465B71]">
                           {t('Transparente: sabés exactamente qué incluye cada tarifa sin costos ocultos.', 'Clear and transparent inclusions.')}
@@ -598,7 +888,7 @@ export const FlightSearchResults: React.FC = () => {
 
                           <button
                             onClick={() => handleSelectFlightAndFare(flight, 'basic')}
-                            className="w-full mt-6 py-2.5 bg-neutral-100 hover:bg-[#5F429A] hover:text-white text-[#263A79] text-xs font-bold rounded-lg transition-colors"
+                            className="w-full mt-6 py-2.5 bg-neutral-100 hover:bg-[#5F429A] hover:text-white text-[#263A79] text-xs font-bold rounded-lg transition-colors cursor-pointer"
                           >
                             {t('ELEGIR BASIC', 'SELECT BASIC')}
                           </button>
@@ -639,7 +929,7 @@ export const FlightSearchResults: React.FC = () => {
 
                           <button
                             onClick={() => handleSelectFlightAndFare(flight, 'smart')}
-                            className="w-full mt-6 py-2.5 bg-[#5F429A] hover:bg-[#45469C] text-white text-xs font-bold rounded-lg transition-all shadow-sm"
+                            className="w-full mt-6 py-2.5 bg-[#5F429A] hover:bg-[#45469C] text-white text-xs font-bold rounded-lg transition-all shadow-sm cursor-pointer"
                           >
                             {t('ELEGIR SMART', 'SELECT SMART')}
                           </button>
@@ -676,7 +966,7 @@ export const FlightSearchResults: React.FC = () => {
 
                           <button
                             onClick={() => handleSelectFlightAndFare(flight, 'flex')}
-                            className="w-full mt-6 py-2.5 bg-neutral-100 hover:bg-[#5F429A] hover:text-white text-[#263A79] text-xs font-bold rounded-lg transition-colors"
+                            className="w-full mt-6 py-2.5 bg-neutral-100 hover:bg-[#5F429A] hover:text-white text-[#263A79] text-xs font-bold rounded-lg transition-colors cursor-pointer"
                           >
                             {t('ELEGIR FLEX', 'SELECT FLEX')}
                           </button>
@@ -711,14 +1001,14 @@ export const FlightSearchResults: React.FC = () => {
                     {t('Crear Alerta de Tarifa Baja', 'Create Low-Fare Alert')}
                   </h3>
                   <p className="text-[11px] text-neutral-300">
-                    {originAirport.code} → {destinationAirport.code}
+                    {activeOrigin.code} → {activeDest.code}
                   </p>
                 </div>
               </div>
 
               <button
                 onClick={() => setIsAlertModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -743,59 +1033,53 @@ export const FlightSearchResults: React.FC = () => {
               <form onSubmit={handleSavePriceAlert} className="p-6 space-y-4 text-xs">
                 <div className="p-3 bg-[#FAF9FD] rounded-xl border border-neutral-200 space-y-1">
                   <span className="font-bold text-[#263A79] block">
-                    {originAirport.city} ({originAirport.code}) ➔ {destinationAirport.city} ({destinationAirport.code})
+                    {activeOrigin.city} ({activeOrigin.code}) ➔ {activeDest.city} ({activeDest.code})
                   </span>
                   <span className="text-[#465B71] block">
-                    {t('Fecha de salida:', 'Departure:')} {departureDate}
+                    {t('Fecha de salida:', 'Departure:')} {activeDate}
                   </span>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-[#465B71] uppercase text-[10px] tracking-wider block">
-                    {t('CORREO ELECTRÓNICO PARA AVISOS', 'NOTIFICATION EMAIL')}
+                  <label className="font-bold text-[#465B71] uppercase tracking-wider text-[10px]">
+                    {t('Avisarme si el precio baja de:', 'Notify me if fare drops below:')}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-base text-[#5F429A]">{formatPrice(alertTargetPrice)}</span>
+                    <input
+                      type="range"
+                      min="35"
+                      max="150"
+                      step="5"
+                      value={alertTargetPrice}
+                      onChange={e => setAlertTargetPrice(parseInt(e.target.value, 10))}
+                      className="flex-1 accent-[#5F429A]"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-[#465B71] uppercase tracking-wider text-[10px]">
+                    {t('Tu correo electrónico:', 'Your email address:')}
                   </label>
                   <input
                     type="email"
                     required
                     value={alertEmail}
-                    onChange={(e) => setAlertEmail(e.target.value)}
-                    className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-lg text-xs font-semibold text-[#191A23] focus:ring-1 focus:ring-[#5F429A]"
-                    placeholder="tu@email.com"
+                    onChange={e => setAlertEmail(e.target.value)}
+                    className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-lg text-xs text-[#191A23] focus:ring-1 focus:ring-[#5F429A]"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="font-bold text-[#465B71] uppercase text-[10px] tracking-wider">
-                      {t('AVISAR SI BAJA DE:', 'NOTIFY ME IF FARE DROPS BELOW:')}
-                    </label>
-                    <span className="font-mono font-bold text-emerald-700">
-                      {formatPrice(alertTargetPrice)}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="40"
-                    max="100"
-                    step="5"
-                    value={alertTargetPrice}
-                    onChange={(e) => setAlertTargetPrice(Number(e.target.value))}
-                    className="w-full accent-emerald-600 cursor-pointer"
-                  />
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    className="w-full py-3 bg-[#5F429A] hover:bg-[#45469C] text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
-                  >
-                    <Bell className="w-4 h-4" />
-                    <span>{t('ACTIVAR ALERTA GRATUITA', 'ACTIVATE FREE ALERT')}</span>
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-[#5F429A] hover:bg-[#45469C] text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Bell className="w-4 h-4" />
+                  <span>{t('ACTIVAR ALERTA GRATUITA', 'ACTIVATE FREE ALERT')}</span>
+                </button>
               </form>
             )}
-
           </div>
         </div>
       )}

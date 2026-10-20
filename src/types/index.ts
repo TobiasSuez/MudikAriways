@@ -82,6 +82,7 @@ export interface Booking {
   paymentMethod: 'card' | 'wallet' | 'points';
   status: 'confirmed' | 'checkedIn' | 'cancelled';
   boardingPassGenerated?: boolean;
+  multiCityFlights?: SelectedMultiCityFlight[];
 }
 
 export type FlightStatusType = 'ON_TIME' | 'BOARDING' | 'DELAYED' | 'DEPARTED' | 'ARRIVED' | 'CANCELLED';
@@ -134,6 +135,24 @@ export interface DestinationItem {
   flightTimeFromCGK: string;
   priceFromUSD: number;
   gradient: string;
+  imageUrl?: string;
+}
+
+export interface MultiCitySegment {
+  id: string;
+  origin: Airport;
+  destination: Airport;
+  departureDate: string;
+}
+
+export interface SelectedMultiCityFlight {
+  segmentId: string;
+  segmentIndex: number;
+  origin: Airport;
+  destination: Airport;
+  departureDate: string;
+  flight: Flight;
+  fareTier: FareTier;
 }
 
 export interface EditorialArticle {
@@ -147,6 +166,7 @@ export interface EditorialArticle {
   contentParagraphs: string[];
   culturalTip: string;
   tag: string;
+  imageUrl?: string;
 }
 
 export interface FAQItem {
@@ -180,4 +200,5 @@ export type PageView =
   | 'onboard'
   | 'baggage'
   | 'help'
-  | 'account';
+  | 'account'
+  | 'about-us';

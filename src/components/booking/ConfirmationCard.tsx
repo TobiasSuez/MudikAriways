@@ -126,58 +126,103 @@ export const ConfirmationCard: React.FC<ConfirmationCardProps> = ({ booking }) =
             </div>
           </div>
 
-          {/* Outbound Flight Details */}
-          <div className="bg-[#FAF9FD] rounded-2xl p-5 border border-neutral-200/80 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#5F429A] uppercase tracking-wider flex items-center gap-1.5">
-                <Plane className="w-3.5 h-3.5" />
-                {t('VUELO DE SALIDA', 'OUTBOUND FLIGHT')} · {booking.outboundFlight.flightNumber}
-              </span>
-              <span className="text-xs text-[#465B71] font-semibold">
-                {booking.outboundFlight.aircraft}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="text-xl font-black text-[#191A23] tabular-nums">
-                  {booking.outboundFlight.departureTime}
+          {/* Outbound or Multi-City Flight Details */}
+          {booking.multiCityFlights && booking.multiCityFlights.length > 0 ? (
+            <div className="space-y-4">
+              <div className="text-xs font-bold text-[#5F429A] uppercase tracking-wider flex items-center gap-2">
+                <Plane className="w-4 h-4" />
+                <span>{t('ITINERARIO MULTITRAYECTO CONFIRMADO', 'CONFIRMED MULTI-CITY ITINERARY')} ({booking.multiCityFlights.length} {t('tramos', 'legs')})</span>
+              </div>
+              {booking.multiCityFlights.map((m, idx) => (
+                <div key={m.segmentId || idx} className="bg-[#FAF9FD] rounded-2xl p-4 sm:p-5 border border-neutral-200/80 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-[#263A79] uppercase">
+                      {t('TRAMO', 'LEG')} {idx + 1}: {m.origin.city} ({m.origin.code}) → {m.destination.city} ({m.destination.code})
+                    </span>
+                    <span className="text-[#5F429A] font-bold">{m.flight.flightNumber} · {m.departureDate}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-xl font-black text-[#191A23] tabular-nums">
+                        {m.flight.departureTime}
+                      </div>
+                      <div className="text-xs font-bold text-[#263A79]">
+                        {m.origin.code} ({m.origin.city})
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-[10px] text-[#465B71] font-semibold">{m.flight.duration}</span>
+                      <div className="w-16 sm:w-24 h-0.5 bg-neutral-300 relative flex items-center justify-center">
+                        <div className="w-2 h-2 rounded-full bg-[#5F429A] absolute left-0" />
+                        <div className="w-2 h-2 rounded-full bg-[#263A79] absolute right-0" />
+                      </div>
+                      <span className="text-[9px] text-emerald-600 font-bold uppercase">{t('DIRECTO', 'DIRECT')}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-black text-[#191A23] tabular-nums">
+                        {m.flight.arrivalTime}
+                      </div>
+                      <div className="text-xs font-bold text-[#263A79]">
+                        {m.destination.code} ({m.destination.city})
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xs font-bold text-[#263A79]">
-                  {booking.outboundFlight.origin.code} ({booking.outboundFlight.origin.city})
+              ))}
+            </div>
+          ) : (
+            <div className="bg-[#FAF9FD] rounded-2xl p-5 border border-neutral-200/80 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#5F429A] uppercase tracking-wider flex items-center gap-1.5">
+                  <Plane className="w-3.5 h-3.5" />
+                  {t('VUELO DE SALIDA', 'OUTBOUND FLIGHT')} · {booking.outboundFlight.flightNumber}
+                </span>
+                <span className="text-xs text-[#465B71] font-semibold">
+                  {booking.outboundFlight.aircraft}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-xl font-black text-[#191A23] tabular-nums">
+                    {booking.outboundFlight.departureTime}
+                  </div>
+                  <div className="text-xs font-bold text-[#263A79]">
+                    {booking.outboundFlight.origin.code} ({booking.outboundFlight.origin.city})
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[10px] text-[#465B71] font-semibold">{booking.outboundFlight.duration}</span>
+                  <div className="w-20 sm:w-28 h-0.5 bg-neutral-300 relative flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-[#5F429A] absolute left-0" />
+                    <div className="w-2 h-2 rounded-full bg-[#263A79] absolute right-0" />
+                  </div>
+                  <span className="text-[9px] text-emerald-600 font-bold uppercase">{t('DIRECTO', 'DIRECT')}</span>
+                </div>
+
+                <div className="text-right">
+                  <div className="text-xl font-black text-[#191A23] tabular-nums">
+                    {booking.outboundFlight.arrivalTime}
+                  </div>
+                  <div className="text-xs font-bold text-[#263A79]">
+                    {booking.outboundFlight.destination.code} ({booking.outboundFlight.destination.city})
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-[10px] text-[#465B71] font-semibold">{booking.outboundFlight.duration}</span>
-                <div className="w-20 sm:w-28 h-0.5 bg-neutral-300 relative flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-[#5F429A] absolute left-0" />
-                  <div className="w-2 h-2 rounded-full bg-[#263A79] absolute right-0" />
-                </div>
-                <span className="text-[9px] text-emerald-600 font-bold uppercase">{t('DIRECTO', 'DIRECT')}</span>
-              </div>
-
-              <div className="text-right">
-                <div className="text-xl font-black text-[#191A23] tabular-nums">
-                  {booking.outboundFlight.arrivalTime}
-                </div>
-                <div className="text-xs font-bold text-[#263A79]">
-                  {booking.outboundFlight.destination.code} ({booking.outboundFlight.destination.city})
-                </div>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-[#465B71] pt-2 border-t border-neutral-200/80">
+                <span className="flex items-center gap-1">
+                  <Armchair className="w-3.5 h-3.5 text-[#5F429A]" />
+                  {t('Asiento:', 'Seat:')} <strong className="text-[#191A23]">{booking.selectedSeat}</strong>
+                </span>
+                <span className="flex items-center gap-1">
+                  <Luggage className="w-3.5 h-3.5 text-[#5F429A]" />
+                  {t('Equipaje:', 'Baggage:')} <strong className="text-[#191A23]">{booking.outboundFlight.baggageIncluded}</strong>
+                </span>
               </div>
             </div>
-
-            <div className="flex flex-wrap items-center gap-4 text-xs text-[#465B71] pt-2 border-t border-neutral-200/80">
-              <span className="flex items-center gap-1">
-                <Armchair className="w-3.5 h-3.5 text-[#5F429A]" />
-                {t('Asiento:', 'Seat:')} <strong className="text-[#191A23]">{booking.selectedSeat}</strong>
-              </span>
-              <span className="flex items-center gap-1">
-                <Luggage className="w-3.5 h-3.5 text-[#5F429A]" />
-                {t('Equipaje:', 'Baggage:')} <strong className="text-[#191A23]">{booking.outboundFlight.baggageIncluded}</strong>
-              </span>
-            </div>
-          </div>
+          )}
 
           {/* Barcode & Simulated QR representation */}
           <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-neutral-200">

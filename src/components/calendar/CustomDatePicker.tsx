@@ -294,8 +294,8 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
-      <div className="bg-white rounded-3xl max-w-4xl w-full p-5 sm:p-7 shadow-2xl border border-neutral-200 space-y-4 max-h-[95vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 animate-in fade-in duration-150">
+      <div className="bg-white rounded-2xl sm:rounded-3xl max-w-4xl w-full p-3.5 sm:p-7 shadow-2xl border border-neutral-200 space-y-3 sm:space-y-4 max-h-[95vh] overflow-y-auto">
         
         {/* Top Modal Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-200">

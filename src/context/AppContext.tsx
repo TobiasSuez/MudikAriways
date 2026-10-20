@@ -9,8 +9,10 @@ import {
   Flight, 
   Language, 
   MudikMember, 
+  MultiCitySegment,
   PageView, 
   PassengerInfo, 
+  SelectedMultiCityFlight,
   TripType 
 } from '../types';
 import { AIRPORTS, DEMO_BOOKING, INITIAL_USER, MOCK_FLIGHTS } from '../data/mockData';
@@ -40,6 +42,11 @@ interface AppContextType {
   setReturnDate: (date: string) => void;
   tripType: TripType;
   setTripType: (type: TripType) => void;
+  multiCitySegments: MultiCitySegment[];
+  setMultiCitySegments: React.Dispatch<React.SetStateAction<MultiCitySegment[]>>;
+  addMultiCitySegment: () => void;
+  removeMultiCitySegment: (id: string) => void;
+  updateMultiCitySegment: (id: string, updates: Partial<MultiCitySegment>) => void;
   passengers: { adults: number; children: number; infants: number };
   setPassengers: React.Dispatch<React.SetStateAction<{ adults: number; children: number; infants: number }>>;
   cabinClass: CabinClass;
@@ -59,6 +66,8 @@ interface AppContextType {
   setSelectedOutboundFlight: (flight: Flight | null) => void;
   selectedReturnFlight: Flight | null;
   setSelectedReturnFlight: (flight: Flight | null) => void;
+  selectedMultiCityFlights: SelectedMultiCityFlight[];
+  setSelectedMultiCityFlights: React.Dispatch<React.SetStateAction<SelectedMultiCityFlight[]>>;
   selectedFareTier: FareTier;
   setSelectedFareTier: (tier: FareTier) => void;
   passengerDetails: PassengerInfo;
@@ -110,6 +119,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [departureDate, setDepartureDate] = useState<string>('2026-10-15');
   const [returnDate, setReturnDate] = useState<string>('2026-10-22');
   const [tripType, setTripType] = useState<TripType>('roundTrip');
+  const [multiCitySegments, setMultiCitySegments] = useState<MultiCitySegment[]>([
+    { id: 'seg-1', origin: AIRPORTS[0], destination: AIRPORTS[1], departureDate: '2026-10-15' },
+    { id: 'seg-2', origin: AIRPORTS[1], destination: AIRPORTS[5], departureDate: '2026-10-19' },
+  ]);
+
+  const addMultiCitySegment = () => {
+    if (multiCitySegments.length >= 4) return;
+    const lastSeg = multiCitySegments[multiCitySegments.length - 1];
+    const nextOrigin = lastSeg ? lastSeg.destination : AIRPORTS[0];
+    const availableDests = AIRPORTS.filter(a => a.code !== nextOrigin.code);
+    const nextDest = availableDests[0] || AIRPORTS[1];
+
+    let nextDate = '2026-10-23';
+    if (lastSeg?.departureDate) {
+      const d = new Date(lastSeg.departureDate + 'T00:00:00');
+      d.setDate(d.getDate() + 3);
+      nextDate = d.toISOString().split('T')[0];
+    }
+
+    setMultiCitySegments(prev => [
+      ...prev,
+      {
+        id: `seg-${Date.now()}`,
+        origin: nextOrigin,
+        destination: nextDest,
+        departureDate: nextDate
+      }
+    ]);
+  };
+
+  const removeMultiCitySegment = (id: string) => {
+    if (multiCitySegments.length <= 2) return;
+    setMultiCitySegments(prev => prev.filter(s => s.id !== id));
+  };
+
+  const updateMultiCitySegment = (id: string, updates: Partial<MultiCitySegment>) => {
+    setMultiCitySegments(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+  };
   const [passengers, setPassengers] = useState({ adults: 1, children: 0, infants: 0 });
   const [cabinClass, setCabinClass] = useState<CabinClass>('Economy');
   const [promoCode, setPromoCode] = useState<string>('');
@@ -118,6 +165,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Booking Flow
   const [selectedOutboundFlight, setSelectedOutboundFlight] = useState<Flight | null>(MOCK_FLIGHTS[0]);
   const [selectedReturnFlight, setSelectedReturnFlight] = useState<Flight | null>(MOCK_FLIGHTS[5]);
+  const [selectedMultiCityFlights, setSelectedMultiCityFlights] = useState<SelectedMultiCityFlight[]>([]);
   const [selectedFareTier, setSelectedFareTier] = useState<FareTier>('smart');
   const [passengerDetails, setPassengerDetails] = useState<PassengerInfo>({
     id: 'p-user',
@@ -192,10 +240,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const completeBooking = (method: 'card' | 'wallet' | 'points'): Booking => {
     // Calculate total price
-    const baseFare = selectedOutboundFlight?.fares[selectedFareTier] || 60;
-    const returnFare = tripType === 'roundTrip' && selectedReturnFlight 
-      ? selectedReturnFlight.fares[selectedFareTier] 
-      : 0;
+    let baseFare = 0;
+    if (tripType === 'multiCity' && selectedMultiCityFlights.length > 0) {
+      baseFare = selectedMultiCityFlights.reduce((sum, item) => sum + (item.flight.fares[item.fareTier] || 60), 0);
+    } else {
+      baseFare = selectedOutboundFlight?.fares[selectedFareTier] || 60;
+      if (tripType === 'roundTrip' && selectedReturnFlight) {
+        baseFare += selectedReturnFlight.fares[selectedFareTier];
+      }
+    }
     
     let extrasCost = 0;
     if (extras.extraBaggageKg === 20) extrasCost += 18;
@@ -206,8 +259,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (extras.inFlightWifi) extrasCost += 9;
 
     const seatCost = selectedSeat.startsWith('1') || selectedSeat.startsWith('2') || selectedSeat.startsWith('3') ? 14 : 6;
-    const taxes = 18;
-    const total = baseFare + returnFare + extrasCost + seatCost + taxes;
+    const taxes = tripType === 'multiCity' ? 12 * Math.max(2, selectedMultiCityFlights.length) : 18;
+    const total = baseFare + extrasCost + seatCost + taxes;
 
     // Random realistic booking code
     const randomCode = 'MDK' + Math.floor(100 + Math.random() * 900) + 'X' + Math.floor(1 + Math.random() * 9);
@@ -218,6 +271,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       passenger: passengerDetails,
       outboundFlight: selectedOutboundFlight || MOCK_FLIGHTS[0],
       returnFlight: tripType === 'roundTrip' ? (selectedReturnFlight || MOCK_FLIGHTS[5]) : undefined,
+      multiCityFlights: tripType === 'multiCity' ? selectedMultiCityFlights : undefined,
       selectedFareTier,
       selectedSeat,
       extras,
@@ -370,6 +424,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setReturnDate,
         tripType,
         setTripType,
+        multiCitySegments,
+        setMultiCitySegments,
+        addMultiCitySegment,
+        removeMultiCitySegment,
+        updateMultiCitySegment,
         passengers,
         setPassengers,
         cabinClass,
@@ -385,6 +444,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSelectedOutboundFlight,
         selectedReturnFlight,
         setSelectedReturnFlight,
+        selectedMultiCityFlights,
+        setSelectedMultiCityFlights,
         selectedFareTier,
         setSelectedFareTier,
         passengerDetails,

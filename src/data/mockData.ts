@@ -388,7 +388,8 @@ export const DESTINATIONS: DestinationItem[] = [
     localFood: ['Babi Guling ceremonial', 'Ayam Betutu especiado con base genep', 'Lawar balinés tradicional'],
     flightTimeFromCGK: '1h 50m',
     priceFromUSD: 49,
-    gradient: 'from-[#5F429A]/90 to-[#263A79]/95',
+    gradient: 'from-[#5F429A]/80 to-[#263A79]/90',
+    imageUrl: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=900&q=80',
   },
   {
     id: 'dest-yogyakarta',
@@ -402,7 +403,8 @@ export const DESTINATIONS: DestinationItem[] = [
     localFood: ['Gudeg javanés con yaca y huevo', 'Kopi Jos con carbón incandescente', 'Bakpia de frijol mungo'],
     flightTimeFromCGK: '1h 15m',
     priceFromUSD: 42,
-    gradient: 'from-[#263A79]/90 to-[#465B71]/95',
+    gradient: 'from-[#263A79]/80 to-[#465B71]/90',
+    imageUrl: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?auto=format&fit=crop&w=900&q=80',
   },
   {
     id: 'dest-jakarta',
@@ -416,7 +418,8 @@ export const DESTINATIONS: DestinationItem[] = [
     localFood: ['Soto Betawi cremoso de coco', 'Kerak Telor callejero crujiente', 'Ketoprak con salsa de maní'],
     flightTimeFromCGK: 'Centro de conexión',
     priceFromUSD: 38,
-    gradient: 'from-[#465B71]/90 to-[#45469C]/95',
+    gradient: 'from-[#465B71]/80 to-[#45469C]/90',
+    imageUrl: 'https://images.unsplash.com/photo-1555899434-94d1338eb352?auto=format&fit=crop&w=900&q=80',
   },
   {
     id: 'dest-lombok',
@@ -430,7 +433,8 @@ export const DESTINATIONS: DestinationItem[] = [
     localFood: ['Ayam Taliwang con salsa plecing picante', 'Bebalung sopa de costilla especiada', 'Plecing Kangkung'],
     flightTimeFromCGK: '2h 00m',
     priceFromUSD: 54,
-    gradient: 'from-[#45469C]/90 to-[#5F429A]/95',
+    gradient: 'from-[#45469C]/80 to-[#5F429A]/90',
+    imageUrl: 'https://images.unsplash.com/photo-1570789210967-2cac24afeb00?auto=format&fit=crop&w=900&q=80',
   },
   {
     id: 'dest-labuan-bajo',
@@ -444,7 +448,8 @@ export const DESTINATIONS: DestinationItem[] = [
     localFood: ['Ikan Kuah Asam pescado fresco en caldo cítrico', 'Kolo arroz cocinado en caña de bambú', 'Café robusta orgánico de Flores'],
     flightTimeFromCGK: '2h 25m',
     priceFromUSD: 89,
-    gradient: 'from-[#263A79]/90 to-[#5F429A]/95',
+    gradient: 'from-[#263A79]/80 to-[#5F429A]/90',
+    imageUrl: 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=900&q=80',
   },
   {
     id: 'dest-medan',
@@ -458,7 +463,8 @@ export const DESTINATIONS: DestinationItem[] = [
     localFood: ['Rendang auténtico de Sumatra', 'Bika Ambon esponjoso aromatizado con pandan', 'Durian Ucok fresco'],
     flightTimeFromCGK: '2h 15m',
     priceFromUSD: 68,
-    gradient: 'from-[#5F429A]/90 to-[#465B71]/95',
+    gradient: 'from-[#5F429A]/80 to-[#465B71]/90',
+    imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=900&q=80',
   },
 ];
 

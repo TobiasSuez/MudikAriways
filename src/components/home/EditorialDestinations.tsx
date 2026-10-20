@@ -45,22 +45,32 @@ export const EditorialDestinations: React.FC = () => {
               className="group bg-white rounded-2xl overflow-hidden border border-neutral-200/90 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
             >
               <div>
-                {/* Visual Header with fallback gradient */}
-                <div className={`h-52 relative overflow-hidden bg-gradient-to-br ${dest.gradient} p-6 flex flex-col justify-between text-white`}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold tracking-widest uppercase bg-white/20 backdrop-blur-md px-2.5 py-1 rounded-md">
+                {/* Visual Header with real destination photo and gradient overlay */}
+                <div className={`h-56 relative overflow-hidden bg-gradient-to-br ${dest.gradient} p-6 flex flex-col justify-between text-white group`}>
+                  {dest.imageUrl && (
+                    <img 
+                      src={dest.imageUrl} 
+                      alt={dest.city}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                    />
+                  )}
+                  {/* Contrast Protection Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/30" />
+
+                  <div className="relative z-10 flex items-center justify-between">
+                    <span className="text-[10px] font-bold tracking-widest uppercase bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-md border border-white/15">
                       {dest.category}
                     </span>
-                    <span className="text-xs font-bold tracking-widest text-white/90">
+                    <span className="text-xs font-mono font-bold tracking-widest text-white/95 bg-black/30 px-2 py-0.5 rounded backdrop-blur-xs">
                       {dest.code}
                     </span>
                   </div>
 
-                  <div>
-                    <h3 className="font-display text-2xl font-extrabold tracking-tight">
+                  <div className="relative z-10">
+                    <h3 className="font-display text-2xl font-extrabold tracking-tight drop-shadow-sm">
                       {dest.city}
                     </h3>
-                    <p className="text-xs text-white/85 font-medium italic mt-0.5">
+                    <p className="text-xs text-white/90 font-medium italic mt-0.5 line-clamp-1">
                       “{dest.tagline}”
                     </p>
                   </div>

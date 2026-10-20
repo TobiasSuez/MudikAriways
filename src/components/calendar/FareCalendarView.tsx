@@ -59,6 +59,9 @@ export const FareCalendarView: React.FC = () => {
   const daysOfWeek = language === 'ES'
     ? ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
     : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const shortDaysOfWeek = language === 'ES'
+    ? ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do']
+    : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
   const monthFares = getMonthFares(originAirport.code, destinationAirport.code, selectedYear, selectedMonth);
 
@@ -385,19 +388,22 @@ export const FareCalendarView: React.FC = () => {
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-neutral-200/90 shadow-sm space-y-4">
           
           {/* Days of week header */}
-          <div className="grid grid-cols-7 gap-2 text-center font-bold text-xs uppercase tracking-wider text-[#465B71] pb-2 border-b border-neutral-200">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center font-bold text-[10px] sm:text-xs uppercase tracking-wider text-[#465B71] pb-2 border-b border-neutral-200">
             {daysOfWeek.map((day, i) => (
-              <div key={i} className="py-1">{day}</div>
+              <div key={i} className="py-1">
+                <span className="hidden sm:inline">{day}</span>
+                <span className="sm:hidden">{shortDaysOfWeek[i]}</span>
+              </div>
             ))}
           </div>
 
           {/* Grid of days */}
           <div 
-            className="grid grid-cols-7 gap-2 sm:gap-3"
+            className="grid grid-cols-7 gap-1 sm:gap-3"
             onMouseLeave={() => setHoveredDate(null)}
           >
             {blankDays.map((_, idx) => (
-              <div key={`blank-${idx}`} className="h-24 sm:h-28 bg-neutral-50/40 rounded-2xl border border-dashed border-neutral-200/60" />
+              <div key={`blank-${idx}`} className="h-16 sm:h-24 md:h-28 bg-neutral-50/40 rounded-xl sm:rounded-2xl border border-dashed border-neutral-200/60" />
             ))}
 
             {monthFares.map((fare: DayFare) => {
@@ -422,9 +428,9 @@ export const FareCalendarView: React.FC = () => {
 
               let cardStyle = 'bg-white hover:bg-[#FAF9FD] text-[#191A23] border border-neutral-200/90';
               if (isSelectedDep) {
-                cardStyle = 'bg-[#5F429A] text-white font-bold ring-4 ring-[#5F429A]/30 shadow-md';
+                cardStyle = 'bg-[#5F429A] text-white font-bold ring-2 sm:ring-4 ring-[#5F429A]/30 shadow-md';
               } else if (isSelectedRet) {
-                cardStyle = 'bg-[#263A79] text-white font-bold ring-4 ring-[#263A79]/30 shadow-md';
+                cardStyle = 'bg-[#263A79] text-white font-bold ring-2 sm:ring-4 ring-[#263A79]/30 shadow-md';
               } else if (isInRange) {
                 cardStyle = 'bg-[#5F429A]/15 border-y-2 border-[#5F429A]/30 text-[#263A79] font-semibold';
               } else if (isHoveredRange) {
@@ -442,7 +448,7 @@ export const FareCalendarView: React.FC = () => {
                     }
                   }}
                   onClick={() => !isPast && handleSelectDay(fare.date)}
-                  className={`h-24 sm:h-28 p-2 sm:p-2.5 rounded-2xl transition-all flex flex-col justify-between text-left relative overflow-hidden min-w-0 ${
+                  className={`h-16 sm:h-24 md:h-28 p-1 sm:p-2.5 rounded-xl sm:rounded-2xl transition-all flex flex-col justify-between text-left relative overflow-hidden min-w-0 ${
                     isPast ? 'opacity-30 cursor-not-allowed bg-neutral-100' : `${cardStyle} cursor-pointer hover:scale-[1.02]`
                   }`}
                 >

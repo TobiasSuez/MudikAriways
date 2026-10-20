@@ -18,6 +18,7 @@ import {
   TrendingDown
 } from 'lucide-react';
 import { PageView } from '../../types';
+import { CompanyLogo } from './CompanyLogo';
 
 export const Navbar: React.FC = () => {
   const { 
@@ -46,23 +47,13 @@ export const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           
-          {/* Zone 1: Single text element Brand Zone */}
+          {/* Zone 1: Brand Zone with Customizable Logo Slot */}
           <div className="flex items-center gap-3">
             <button 
               onClick={() => handleNavClick('home')} 
-              className="group flex items-center gap-3 text-left focus:outline-none"
+              className="group flex items-center text-left focus:outline-none"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#5F429A] via-[#45469C] to-[#263A79] flex items-center justify-center text-white shadow-md shadow-[#5F429A]/15 group-hover:scale-105 transition-transform">
-                <Plane className="w-5 h-5 -rotate-45" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-display font-extrabold tracking-tight text-xl text-[#263A79] group-hover:text-[#5F429A] transition-colors leading-none">
-                  MUDIK<span className="text-[#5F429A] ml-1">AIRWAYS</span>
-                </span>
-                <span className="text-[10px] tracking-widest uppercase font-medium text-[#465B71] mt-1 hidden sm:block">
-                  Indonesia Low-Cost
-                </span>
-              </div>
+              <CompanyLogo variant="navbar" />
             </button>
           </div>
 
@@ -253,6 +244,18 @@ export const Navbar: React.FC = () => {
               MUDIK POINTS
             </button>
 
+            {/* SOBRE NOSOTROS */}
+            <button 
+              onClick={() => handleNavClick('about-us')}
+              className={`px-3 py-2 text-sm font-semibold tracking-wide transition-colors ${
+                currentPage === 'about-us'
+                  ? 'text-[#5F429A] border-b-2 border-[#5F429A]'
+                  : 'text-[#263A79] hover:text-[#5F429A]'
+              }`}
+            >
+              {t('SOBRE NOSOTROS', 'ABOUT US')}
+            </button>
+
             {/* AYUDA */}
             <button 
               onClick={() => handleNavClick('help')}
@@ -432,6 +435,12 @@ export const Navbar: React.FC = () => {
               className="w-full text-left px-3 py-2 text-sm font-medium text-[#5F429A] font-semibold hover:bg-[#FAF9FD] rounded-lg"
             >
               MUDIK POINTS ({currentUser ? `${currentUser.points} pts` : t('Programa de Puntos', 'Loyalty Program')})
+            </button>
+            <button 
+              onClick={() => handleNavClick('about-us')}
+              className="w-full text-left px-3 py-2 text-sm font-medium text-[#191A23] hover:bg-[#FAF9FD] rounded-lg"
+            >
+              {t('Sobre Nosotros · Nuestra Historia', 'About Us · Our Story')}
             </button>
             <button 
               onClick={() => handleNavClick('help')}

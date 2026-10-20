@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { Plane, Globe, ShieldCheck, Heart, Award } from 'lucide-react';
+import { CompanyLogo } from './CompanyLogo';
 
 export const Footer: React.FC = () => {
   const { navigateTo, language, setLanguage, currency, setCurrency, t } = useApp();
@@ -13,12 +14,7 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12 border-b border-neutral-800">
           <div className="lg:col-span-5 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#5F429A] to-[#263A79] flex items-center justify-center text-white">
-                <Plane className="w-5 h-5 -rotate-45" />
-              </div>
-              <span className="font-display font-extrabold text-2xl tracking-tight text-white">
-                MUDIK<span className="text-[#9D7AE2] ml-1">AIRWAYS</span>
-              </span>
+              <CompanyLogo variant="footer" showEditHint={false} />
             </div>
             
             <p className="text-xl font-medium tracking-tight text-neutral-200">
@@ -83,8 +79,8 @@ export const Footer: React.FC = () => {
             <h4 className="font-bold tracking-wider text-white uppercase text-[11px]">{t('Sobre Mudik', 'About Mudik')}</h4>
             <ul className="space-y-2 text-neutral-400">
               <li>
-                <button onClick={() => navigateTo('home')} className="hover:text-white transition-colors">
-                  {t('Nuestra Historia', 'Our Story')}
+                <button onClick={() => navigateTo('about-us')} className="hover:text-white transition-colors text-left">
+                  {t('Sobre Nosotros · Nuestra Historia', 'About Us · Our Story')}
                 </button>
               </li>
               <li>

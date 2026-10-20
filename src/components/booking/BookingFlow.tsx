@@ -40,7 +40,8 @@ export const BookingFlow: React.FC = () => {
     currentUser,
     navigateTo,
     t,
-    passengers
+    passengers,
+    selectedMultiCityFlights
   } = useApp();
 
   const totalSeatPassengers = Math.max(1, (passengers?.adults || 1) + (passengers?.children || 0));
@@ -70,7 +71,10 @@ export const BookingFlow: React.FC = () => {
   const totalSeatsPriceUSD = passengerAssignments.reduce((acc, p) => acc + p.priceUSD, 0);
 
   // Price breakdown calculations
-  const flightBasePrice = (selectedOutboundFlight?.fares[selectedFareTier] || 60) * totalSeatPassengers;
+  const isMultiCityBooking = tripType === 'multiCity' && selectedMultiCityFlights.length > 0;
+  const flightBasePrice = (isMultiCityBooking
+    ? selectedMultiCityFlights.reduce((sum, item) => sum + (item.flight.fares[item.fareTier] || 60), 0)
+    : (selectedOutboundFlight?.fares[selectedFareTier] || 60)) * totalSeatPassengers;
   const returnBasePrice = tripType === 'roundTrip' && selectedReturnFlight 
     ? selectedReturnFlight.fares[selectedFareTier] * totalSeatPassengers
     : 0;
@@ -189,7 +193,40 @@ export const BookingFlow: React.FC = () => {
                     </p>
                   </div>
 
-                  {selectedOutboundFlight && (
+                  {isMultiCityBooking ? (
+                    <div className="space-y-4">
+                      <div className="text-xs font-bold uppercase tracking-wider text-[#5F429A] flex items-center gap-2">
+                        <Plane className="w-4 h-4" />
+                        <span>{t('ITINERARIO MULTITRAYECTO', 'MULTI-CITY ITINERARY')} ({selectedMultiCityFlights.length} {t('tramos', 'legs')})</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {selectedMultiCityFlights.map((m, idx) => (
+                          <div key={m.segmentId || idx} className="p-4 bg-neutral-50 rounded-xl border border-neutral-200 space-y-2">
+                            <div className="flex items-center justify-between text-xs font-bold text-[#263A79]">
+                              <span>{t('TRAMO', 'LEG')} {idx + 1}: {m.origin.city} → {m.destination.city}</span>
+                              <span className="text-[#5F429A] uppercase text-[10px] bg-[#5F429A]/10 px-1.5 py-0.5 rounded">
+                                {m.flight.flightNumber} · {m.fareTier}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-lg font-black text-[#191A23]">{m.flight.departureTime}</div>
+                                <div className="text-[11px] text-[#465B71]">{m.origin.code}</div>
+                              </div>
+                              <div className="text-[10px] text-[#465B71] text-center">
+                                <div>{m.flight.duration}</div>
+                                <div className="text-emerald-600 font-bold">{m.departureDate}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-lg font-black text-[#191A23]">{m.flight.arrivalTime}</div>
+                                <div className="text-[11px] text-[#465B71]">{m.destination.code}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : selectedOutboundFlight ? (
                     <div className="p-5 bg-neutral-50 rounded-xl border border-neutral-200 space-y-3">
                       <div className="flex items-center justify-between text-xs font-bold text-[#5F429A]">
                         <span>{t('VUELO DE SALIDA', 'OUTBOUND FLIGHT')} · {selectedOutboundFlight.flightNumber}</span>
@@ -210,7 +247,7 @@ export const BookingFlow: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
                   <div className="flex justify-end pt-4">
                     <button
@@ -748,28 +785,51 @@ export const BookingFlow: React.FC = () => {
 
                 <div className="space-y-3 text-xs text-[#465B71]">
                   
-                  {/* Outbound flight */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-semibold text-[#191A23]">
-                        {selectedOutboundFlight?.flightNumber} ({selectedOutboundFlight?.origin.code} → {selectedOutboundFlight?.destination.code})
+                  {/* Outbound or Multi-City flights */}
+                  {isMultiCityBooking ? (
+                    <div className="space-y-2 pb-2 border-b border-neutral-100">
+                      <div className="font-bold text-[#5F429A] text-[11px] uppercase">
+                        {t('Tramos Multidestino', 'Multi-City Legs')} ({selectedMultiCityFlights.length})
                       </div>
-                      <div className="text-[11px] text-[#465B71] uppercase">Tarifa {selectedFareTier}</div>
-                    </div>
-                    <span className="font-bold text-[#191A23] tabular-nums">{formatPrice(flightBasePrice)}</span>
-                  </div>
-
-                  {/* Return flight if round trip */}
-                  {tripType === 'roundTrip' && selectedReturnFlight && (
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-semibold text-[#191A23]">
-                          {selectedReturnFlight.flightNumber} ({selectedReturnFlight.origin.code} → {selectedReturnFlight.destination.code})
+                      {selectedMultiCityFlights.map((m, idx) => (
+                        <div key={m.segmentId || idx} className="flex items-center justify-between text-[11px]">
+                          <div>
+                            <div className="font-semibold text-[#191A23]">
+                              {t('Tramo', 'Leg')} {idx + 1}: {m.origin.code} → {m.destination.code}
+                            </div>
+                            <div className="text-[10px] text-[#465B71]">{m.flight.flightNumber} · {m.fareTier.toUpperCase()}</div>
+                          </div>
+                          <span className="font-bold text-[#191A23] tabular-nums">
+                            {formatPrice((m.flight.fares[m.fareTier] || 60) * totalSeatPassengers)}
+                          </span>
                         </div>
-                        <div className="text-[11px] text-[#465B71] uppercase">Tarifa {selectedFareTier}</div>
-                      </div>
-                      <span className="font-bold text-[#191A23] tabular-nums">{formatPrice(returnBasePrice)}</span>
+                      ))}
                     </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold text-[#191A23]">
+                            {selectedOutboundFlight?.flightNumber} ({selectedOutboundFlight?.origin.code} → {selectedOutboundFlight?.destination.code})
+                          </div>
+                          <div className="text-[11px] text-[#465B71] uppercase">Tarifa {selectedFareTier}</div>
+                        </div>
+                        <span className="font-bold text-[#191A23] tabular-nums">{formatPrice(flightBasePrice)}</span>
+                      </div>
+
+                      {/* Return flight if round trip */}
+                      {tripType === 'roundTrip' && selectedReturnFlight && (
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-semibold text-[#191A23]">
+                              {selectedReturnFlight.flightNumber} ({selectedReturnFlight.origin.code} → {selectedReturnFlight.destination.code})
+                            </div>
+                            <div className="text-[11px] text-[#465B71] uppercase">Tarifa {selectedFareTier}</div>
+                          </div>
+                          <span className="font-bold text-[#191A23] tabular-nums">{formatPrice(returnBasePrice)}</span>
+                        </div>
+                      )}
+                    </>
                   )}
 
                   {/* Seat Selection */}

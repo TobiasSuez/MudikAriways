@@ -91,22 +91,32 @@ export const DestinationsView: React.FC = () => {
               className="bg-white rounded-3xl overflow-hidden border border-neutral-200/90 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
             >
               <div>
-                {/* Visual Banner */}
-                <div className={`h-64 relative bg-gradient-to-br ${dest.gradient} p-6 flex flex-col justify-between text-white`}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold tracking-widest uppercase bg-white/20 backdrop-blur-md px-3 py-1 rounded-md">
+                {/* Visual Banner with real photo */}
+                <div className={`h-64 relative overflow-hidden bg-gradient-to-br ${dest.gradient} p-6 flex flex-col justify-between text-white group`}>
+                  {dest.imageUrl && (
+                    <img 
+                      src={dest.imageUrl} 
+                      alt={dest.city}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                    />
+                  )}
+                  {/* Contrast Protection Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/30" />
+
+                  <div className="relative z-10 flex items-center justify-between">
+                    <span className="text-xs font-bold tracking-widest uppercase bg-black/40 backdrop-blur-md px-3 py-1 rounded-md border border-white/20">
                       {dest.category}
                     </span>
-                    <span className="font-mono text-xs font-black tracking-widest text-white/90">
+                    <span className="font-mono text-xs font-black tracking-widest text-white/95 bg-black/40 px-2.5 py-0.5 rounded backdrop-blur-xs">
                       {dest.code}
                     </span>
                   </div>
 
-                  <div>
-                    <h2 className="font-display text-3xl font-extrabold tracking-tight">
+                  <div className="relative z-10">
+                    <h2 className="font-display text-3xl font-extrabold tracking-tight drop-shadow-sm">
                       {dest.city}
                     </h2>
-                    <p className="text-xs text-white/90 font-medium italic mt-1">
+                    <p className="text-xs text-white/95 font-medium italic mt-1 line-clamp-1">
                       “{dest.tagline}”
                     </p>
                   </div>

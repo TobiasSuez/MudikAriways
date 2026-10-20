@@ -25,6 +25,7 @@ import { HelpCenterView } from './components/help/HelpCenterView';
 import { AccountDashboardView } from './components/auth/AccountDashboardView';
 import { AuthModal } from './components/auth/AuthModal';
 import { FareCalendarView } from './components/calendar/FareCalendarView';
+import { AboutUsView } from './components/about/AboutUsView';
 
 const MainContent: React.FC = () => {
   const { currentPage } = useApp();
@@ -53,6 +54,7 @@ const MainContent: React.FC = () => {
       {currentPage === 'baggage' && <BaggageView />}
       {currentPage === 'help' && <HelpCenterView />}
       {currentPage === 'account' && <AccountDashboardView />}
+      {currentPage === 'about-us' && <AboutUsView />}
     </main>
   );
 };
