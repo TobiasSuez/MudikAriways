@@ -1,6 +1,7 @@
 import React from 'react';
-
+import logoImg from '../../public/logo.svg';
 /* 
+
  * =========================================================================
  * LOGOTIPO CORPORATIVO DE MUDIK AIRWAYS (ARCHIVO ESTÁTICO)
  * =========================================================================
@@ -27,7 +28,7 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
   return (
     <div className={`inline-flex items-center gap-3 ${className}`}>
       {/* Logotipo SVG oficial de archivo estático /public/logo.svg */}
-      <div className={`flex items-center justify-center transition-transform group-hover:scale-105 shrink-0 ${
+     <div className={`flex items-center justify-center transition-transform group-hover:scale-105 shrink-0 ${
         isLarge 
           ? 'h-16 w-16' 
           : isFooter 
@@ -35,7 +36,7 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
           : 'h-11 w-11 sm:h-12 sm:w-12'
       }`}>
         <img 
-          src="/logo.svg" 
+          src={logoImg} /* Reemplazás el string estático por la variable importada */
           alt="Mudik Airways" 
           className="w-full h-full object-contain filter drop-shadow-xs"
         />
