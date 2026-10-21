@@ -1,5 +1,5 @@
 import React from 'react';
-import logoImg from './public/logo.svg';
+import logoImg from 'layout/logo.svg';
 /* 
 
  * =========================================================================
