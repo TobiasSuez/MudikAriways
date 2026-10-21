@@ -1,6 +1,34 @@
 import { Airport, Booking, DayFare, DestinationItem, EditorialArticle, FAQItem, Flight, FlightStatusRecord, MudikMember, Seat } from '../types';
 
 export const AIRPORTS: Airport[] = [
+  // Argentina - Hubs Principales
+  { code: 'AEP', city: 'Buenos Aires (Aeroparque)', name: 'Aeroparque Jorge Newbery', country: 'Argentina' },
+  { code: 'EZE', city: 'Buenos Aires (Ezeiza)', name: 'Aeropuerto Internacional Ministro Pistarini', country: 'Argentina' },
+  // Argentina - Cabotaje Nacional
+  { code: 'BRC', city: 'Bariloche', name: 'Aeropuerto Int. Teniente Luis Candelaria', country: 'Argentina' },
+  { code: 'MDZ', city: 'Mendoza', name: 'Aeropuerto Int. El Plumerillo', country: 'Argentina' },
+  { code: 'IGR', city: 'Puerto Iguazú', name: 'Aeropuerto Int. Cataratas del Iguazú', country: 'Argentina' },
+  { code: 'COR', city: 'Córdoba', name: 'Aeropuerto Int. Ingeniero Ambrosio Taravella', country: 'Argentina' },
+  { code: 'SLA', city: 'Salta', name: 'Aeropuerto Int. Martín Miguel de Güemes', country: 'Argentina' },
+
+  // Regional Sudamérica
+  { code: 'SCL', city: 'Santiago de Chile', name: 'Aeropuerto Int. Arturo Merino Benítez', country: 'Chile', isInternational: true },
+  { code: 'GIG', city: 'Río de Janeiro', name: 'Aeropuerto Int. Galeão - Antonio Carlos Jobim', country: 'Brasil', isInternational: true },
+  { code: 'GRU', city: 'São Paulo', name: 'Aeropuerto Int. de Guarulhos', country: 'Brasil', isInternational: true },
+  { code: 'LIM', city: 'Lima', name: 'Aeropuerto Int. Jorge Chávez', country: 'Perú', isInternational: true },
+  { code: 'MVD', city: 'Montevideo', name: 'Aeropuerto Int. de Carrasco', country: 'Uruguay', isInternational: true },
+
+  // Estados Unidos
+  { code: 'MIA', city: 'Miami', name: 'Miami International Airport', country: 'Estados Unidos', isInternational: true },
+  { code: 'JFK', city: 'Nueva York', name: 'John F. Kennedy International Airport', country: 'Estados Unidos', isInternational: true },
+  { code: 'MCO', city: 'Orlando', name: 'Orlando International Airport', country: 'Estados Unidos', isInternational: true },
+
+  // Europa
+  { code: 'MAD', city: 'Madrid', name: 'Aeropuerto Adolfo Suárez Madrid-Barajas', country: 'España', isInternational: true },
+  { code: 'BCN', city: 'Barcelona', name: 'Aeropuerto Josep Tarradellas Barcelona-El Prat', country: 'España', isInternational: true },
+  { code: 'FCO', city: 'Roma', name: 'Aeropuerto di Roma-Fiumicino Leonardo da Vinci', country: 'Italia', isInternational: true },
+
+  // Indonesia & Sudeste Asiático (Conservadas)
   { code: 'CGK', city: 'Jakarta', name: 'Soekarno-Hatta International', country: 'Indonesia' },
   { code: 'DPS', city: 'Denpasar / Bali', name: 'Ngurah Rai International', country: 'Indonesia' },
   { code: 'YIA', city: 'Yogyakarta', name: 'Yogyakarta International', country: 'Indonesia' },
@@ -15,12 +43,207 @@ export const AIRPORTS: Airport[] = [
   { code: 'SYD', city: 'Sydney', name: 'Kingsford Smith International', country: 'Australia', isInternational: true },
 ];
 
+export const getAirportByCode = (code: string): Airport => {
+  return AIRPORTS.find(a => a.code === code) || AIRPORTS[0];
+};
+
 export const MOCK_FLIGHTS: Flight[] = [
+  // Rutas Cabotaje Argentina (Buenos Aires AEP / EZE)
+  {
+    id: 'fl-arg-01',
+    flightNumber: 'MDK 1204',
+    origin: getAirportByCode('AEP'),
+    destination: getAirportByCode('BRC'),
+    departureTime: '07:30',
+    arrivalTime: '09:45',
+    duration: '2h 15m',
+    isDirect: true,
+    stopsCount: 0,
+    aircraft: 'Airbus A320neo',
+    fares: { basic: 54, smart: 74, flex: 98 },
+    baggageIncluded: 'Equipaje de mano 7 kg',
+  },
+  {
+    id: 'fl-arg-02',
+    flightNumber: 'MDK 1210',
+    origin: getAirportByCode('AEP'),
+    destination: getAirportByCode('BRC'),
+    departureTime: '14:15',
+    arrivalTime: '16:30',
+    duration: '2h 15m',
+    isDirect: true,
+    stopsCount: 0,
+    aircraft: 'Boeing 737-800',
+    fares: { basic: 58, smart: 78, flex: 104 },
+    baggageIncluded: 'Equipaje de mano 7 kg',
+  },
+  {
+    id: 'fl-arg-03',
+    flightNumber: 'MDK 1302',
+    origin: getAirportByCode('AEP'),
+    destination: getAirportByCode('MDZ'),
+    departureTime: '08:45',
+    arrivalTime: '10:35',
+    duration: '1h 50m',
+    isDirect: true,
+    stopsCount: 0,
+    aircraft: 'Airbus A320neo',
+    fares: { basic: 48, smart: 66, flex: 89 },
+    baggageIncluded: 'Equipaje de mano 7 kg',
+  },
+  {
+    id: 'fl-arg-04',
+    flightNumber: 'MDK 1406',
+    origin: getAirportByCode('AEP'),
+    destination: getAirportByCode('IGR'),
+    departureTime: '09:10',
+    arrivalTime: '11:05',
+    duration: '1h 55m',
+    isDirect: true,
+    stopsCount: 0,
+    aircraft: 'Airbus A320-200',
+    fares: { basic: 52, smart: 70, flex: 94 },
+    baggageIncluded: 'Equipaje de mano 7 kg',
+  },
+  {
+    id: 'fl-arg-05',
+    flightNumber: 'MDK 1102',
+    origin: getAirportByCode('AEP'),
+    destination: getAirportByCode('COR'),
+    departureTime: '06:40',
+    arrivalTime: '08:00',
+    duration: '1h 20m',
+    isDirect: true,
+    stopsCount: 0,
+    aircraft: 'Boeing 737-800',
+    fares: { basic: 36, smart: 52, flex: 72 },
+    baggageIncluded: 'Equipaje de mano 7 kg',
+  },
+  {
+    id: 'fl-arg-06',
+    flightNumber: 'MDK 1205',
+    origin: getAirportByCode('BRC'),
+    destination: getAirportByCode('AEP'),
+    departureTime: '10:30',
+    arrivalTime: '12:40',
+    duration: '2h 10m',
+    isDirect: true,
+    stopsCount: 0,
+    aircraft: 'Airbus A320neo',
+    fares: { basic: 54, smart: 74, flex: 98 },
+    baggageIncluded: 'Equipaje de mano 7 kg',
+  },
+
+  // Rutas Regionales Sudamérica (US$ 375 a US$ 450)
+  {
+    id: 'fl-reg-01',
+    flightNumber: 'MDK 2108',
+    origin: getAirportByCode('EZE'),
+    destination: getAirportByCode('GIG'),
+    departureTime: '10:00',
+    arrivalTime: '13:05',
+    duration: '3h 05m',
+    isDirect: true,
+    stopsCount: 0,
+    aircraft: 'Airbus A320neo',
+    fares: { basic: 395, smart: 445, flex: 520 },
+    baggageIncluded: 'Equipaje despachado 23 kg + 10 kg cabina',
+  },
+  {
+    id: 'fl-reg-02',
+    flightNumber: 'MDK 2204',
+    origin: getAirportByCode('EZE'),
+    destination: getAirportByCode('SCL'),
+    departureTime: '11:30',
+    arrivalTime: '13:45',
+    duration: '2h 15m',
+    isDirect: true,
+    stopsCount: 0,
+    aircraft: 'Airbus A320-200',
+    fares: { basic: 385, smart: 435, flex: 495 },
+    baggageIncluded: 'Equipaje despachado 23 kg + 10 kg cabina',
+  },
+  {
+    id: 'fl-reg-03',
+    flightNumber: 'MDK 2306',
+    origin: getAirportByCode('EZE'),
+    destination: getAirportByCode('LIM'),
+    departureTime: '16:20',
+    arrivalTime: '19:15',
+    duration: '4h 55m',
+    isDirect: true,
+    stopsCount: 0,
+    aircraft: 'Airbus A320neo',
+    fares: { basic: 420, smart: 470, flex: 540 },
+    baggageIncluded: 'Equipaje despachado 23 kg + 10 kg cabina',
+  },
+
+  // Rutas Estados Unidos (US$ 700 a US$ 1.150)
+  {
+    id: 'fl-usa-01',
+    flightNumber: 'MDK 5002',
+    origin: getAirportByCode('EZE'),
+    destination: getAirportByCode('MIA'),
+    departureTime: '21:15',
+    arrivalTime: '05:40',
+    duration: '9h 25m',
+    isDirect: true,
+    stopsCount: 0,
+    aircraft: 'Airbus A330-900neo',
+    fares: { basic: 780, smart: 920, flex: 1100 },
+    baggageIncluded: 'Equipaje despachado 23 kg + 10 kg cabina',
+  },
+  {
+    id: 'fl-usa-02',
+    flightNumber: 'MDK 5010',
+    origin: getAirportByCode('EZE'),
+    destination: getAirportByCode('JFK'),
+    departureTime: '22:45',
+    arrivalTime: '07:55',
+    duration: '11h 10m',
+    isDirect: true,
+    stopsCount: 0,
+    aircraft: 'Boeing 787-9 Dreamliner',
+    fares: { basic: 940, smart: 1080, flex: 1290 },
+    baggageIncluded: 'Equipaje despachado 23 kg + 10 kg cabina',
+  },
+
+  // Rutas Europa (US$ 950 a US$ 1.550+)
+  {
+    id: 'fl-eur-01',
+    flightNumber: 'MDK 7004',
+    origin: getAirportByCode('EZE'),
+    destination: getAirportByCode('MAD'),
+    departureTime: '13:00',
+    arrivalTime: '06:10',
+    duration: '12h 10m',
+    isDirect: true,
+    stopsCount: 0,
+    aircraft: 'Airbus A350-900',
+    fares: { basic: 980, smart: 1180, flex: 1420 },
+    baggageIncluded: 'Equipaje despachado 23 kg + 10 kg cabina',
+  },
+  {
+    id: 'fl-eur-02',
+    flightNumber: 'MDK 7008',
+    origin: getAirportByCode('EZE'),
+    destination: getAirportByCode('BCN'),
+    departureTime: '17:30',
+    arrivalTime: '11:15',
+    duration: '12h 45m',
+    isDirect: true,
+    stopsCount: 0,
+    aircraft: 'Airbus A350-900',
+    fares: { basic: 1050, smart: 1240, flex: 1490 },
+    baggageIncluded: 'Equipaje despachado 23 kg + 10 kg cabina',
+  },
+
+  // Rutas Indonesia (Conservadas)
   {
     id: 'fl-101',
     flightNumber: 'MDK 204',
-    origin: AIRPORTS[0], // CGK
-    destination: AIRPORTS[1], // DPS
+    origin: getAirportByCode('CGK'),
+    destination: getAirportByCode('DPS'),
     departureTime: '06:15',
     arrivalTime: '09:05',
     duration: '1h 50m',
@@ -33,8 +256,8 @@ export const MOCK_FLIGHTS: Flight[] = [
   {
     id: 'fl-102',
     flightNumber: 'MDK 208',
-    origin: AIRPORTS[0], // CGK
-    destination: AIRPORTS[1], // DPS
+    origin: getAirportByCode('CGK'),
+    destination: getAirportByCode('DPS'),
     departureTime: '09:30',
     arrivalTime: '12:25',
     duration: '1h 55m',
@@ -47,8 +270,8 @@ export const MOCK_FLIGHTS: Flight[] = [
   {
     id: 'fl-103',
     flightNumber: 'MDK 214',
-    origin: AIRPORTS[0], // CGK
-    destination: AIRPORTS[1], // DPS
+    origin: getAirportByCode('CGK'),
+    destination: getAirportByCode('DPS'),
     departureTime: '13:45',
     arrivalTime: '16:40',
     duration: '1h 55m',
@@ -61,8 +284,8 @@ export const MOCK_FLIGHTS: Flight[] = [
   {
     id: 'fl-104',
     flightNumber: 'MDK 220',
-    origin: AIRPORTS[0], // CGK
-    destination: AIRPORTS[1], // DPS
+    origin: getAirportByCode('CGK'),
+    destination: getAirportByCode('DPS'),
     departureTime: '17:20',
     arrivalTime: '20:15',
     duration: '1h 55m',
@@ -75,8 +298,8 @@ export const MOCK_FLIGHTS: Flight[] = [
   {
     id: 'fl-105',
     flightNumber: 'MDK 226',
-    origin: AIRPORTS[0], // CGK
-    destination: AIRPORTS[1], // DPS
+    origin: getAirportByCode('CGK'),
+    destination: getAirportByCode('DPS'),
     departureTime: '20:45',
     arrivalTime: '23:35',
     duration: '1h 50m',
@@ -89,8 +312,8 @@ export const MOCK_FLIGHTS: Flight[] = [
   {
     id: 'fl-106',
     flightNumber: 'MDK 312',
-    origin: AIRPORTS[1], // DPS
-    destination: AIRPORTS[0], // CGK
+    origin: getAirportByCode('DPS'),
+    destination: getAirportByCode('CGK'),
     departureTime: '08:10',
     arrivalTime: '09:00',
     duration: '1h 50m',
@@ -103,8 +326,8 @@ export const MOCK_FLIGHTS: Flight[] = [
   {
     id: 'fl-107',
     flightNumber: 'MDK 318',
-    origin: AIRPORTS[1], // DPS
-    destination: AIRPORTS[0], // CGK
+    origin: getAirportByCode('DPS'),
+    destination: getAirportByCode('CGK'),
     departureTime: '15:20',
     arrivalTime: '16:15',
     duration: '1h 55m',
@@ -117,8 +340,8 @@ export const MOCK_FLIGHTS: Flight[] = [
   {
     id: 'fl-108',
     flightNumber: 'MDK 402',
-    origin: AIRPORTS[0], // CGK
-    destination: AIRPORTS[2], // YIA
+    origin: getAirportByCode('CGK'),
+    destination: getAirportByCode('YIA'),
     departureTime: '07:00',
     arrivalTime: '08:15',
     duration: '1h 15m',
@@ -131,8 +354,8 @@ export const MOCK_FLIGHTS: Flight[] = [
   {
     id: 'fl-109',
     flightNumber: 'MDK 550',
-    origin: AIRPORTS[0], // CGK
-    destination: AIRPORTS[5], // LBJ Labuan Bajo
+    origin: getAirportByCode('CGK'),
+    destination: getAirportByCode('LBJ'),
     departureTime: '10:15',
     arrivalTime: '13:40',
     duration: '2h 25m',
@@ -145,8 +368,8 @@ export const MOCK_FLIGHTS: Flight[] = [
   {
     id: 'fl-110',
     flightNumber: 'MDK 612',
-    origin: AIRPORTS[1], // DPS
-    destination: AIRPORTS[5], // LBJ
+    origin: getAirportByCode('DPS'),
+    destination: getAirportByCode('LBJ'),
     departureTime: '11:20',
     arrivalTime: '12:35',
     duration: '1h 15m',
@@ -212,8 +435,8 @@ export const DEMO_BOOKING: Booking = {
   outboundFlight: {
     id: 'fl-101',
     flightNumber: 'MDK 204',
-    origin: AIRPORTS[0], // CGK
-    destination: AIRPORTS[1], // DPS
+    origin: getAirportByCode('CGK'),
+    destination: getAirportByCode('DPS'),
     departureTime: '06:15',
     arrivalTime: '09:05',
     duration: '1h 50m',
@@ -226,8 +449,8 @@ export const DEMO_BOOKING: Booking = {
   returnFlight: {
     id: 'fl-106',
     flightNumber: 'MDK 312',
-    origin: AIRPORTS[1], // DPS
-    destination: AIRPORTS[0], // CGK
+    origin: getAirportByCode('DPS'),
+    destination: getAirportByCode('CGK'),
     departureTime: '15:20',
     arrivalTime: '16:15',
     duration: '1h 55m',
@@ -254,8 +477,35 @@ export const DEMO_BOOKING: Booking = {
 
 export const FLIGHT_STATUSES: FlightStatusRecord[] = [
   {
+    flightNumber: 'MDK 1204',
+    route: { origin: getAirportByCode('AEP'), destination: getAirportByCode('BRC') },
+    scheduledDeparture: '07:30',
+    estimatedDeparture: '07:30',
+    scheduledArrival: '09:45',
+    estimatedArrival: '09:45',
+    gate: 'A03',
+    terminal: 'Aeroparque T1',
+    carousel: 'C2',
+    status: 'ON_TIME',
+    aircraft: 'Airbus A320neo',
+  },
+  {
+    flightNumber: 'MDK 5002',
+    route: { origin: getAirportByCode('EZE'), destination: getAirportByCode('MIA') },
+    scheduledDeparture: '21:15',
+    estimatedDeparture: '21:30',
+    scheduledArrival: '05:40',
+    estimatedArrival: '05:55',
+    gate: 'B18',
+    terminal: 'Ezeiza TB',
+    carousel: 'B5',
+    status: 'BOARDING',
+    aircraft: 'Airbus A330-900neo',
+    delayMinutes: 15,
+  },
+  {
     flightNumber: 'MDK 204',
-    route: { origin: AIRPORTS[0], destination: AIRPORTS[1] },
+    route: { origin: getAirportByCode('CGK'), destination: getAirportByCode('DPS') },
     scheduledDeparture: '06:15',
     estimatedDeparture: '06:15',
     scheduledArrival: '09:05',
@@ -268,7 +518,7 @@ export const FLIGHT_STATUSES: FlightStatusRecord[] = [
   },
   {
     flightNumber: 'MDK 208',
-    route: { origin: AIRPORTS[0], destination: AIRPORTS[1] },
+    route: { origin: getAirportByCode('CGK'), destination: getAirportByCode('DPS') },
     scheduledDeparture: '09:30',
     estimatedDeparture: '09:45',
     scheduledArrival: '12:25',
@@ -282,7 +532,7 @@ export const FLIGHT_STATUSES: FlightStatusRecord[] = [
   },
   {
     flightNumber: 'MDK 402',
-    route: { origin: AIRPORTS[0], destination: AIRPORTS[2] },
+    route: { origin: getAirportByCode('CGK'), destination: getAirportByCode('YIA') },
     scheduledDeparture: '07:00',
     estimatedDeparture: '07:35',
     scheduledArrival: '08:15',
@@ -295,21 +545,8 @@ export const FLIGHT_STATUSES: FlightStatusRecord[] = [
     delayMinutes: 35,
   },
   {
-    flightNumber: 'MDK 550',
-    route: { origin: AIRPORTS[0], destination: AIRPORTS[5] },
-    scheduledDeparture: '10:15',
-    estimatedDeparture: '10:15',
-    scheduledArrival: '13:40',
-    estimatedArrival: '13:40',
-    gate: 'C08',
-    terminal: 'T3',
-    carousel: 'C1',
-    status: 'DEPARTED',
-    aircraft: 'Airbus A320neo',
-  },
-  {
     flightNumber: 'MDK 312',
-    route: { origin: AIRPORTS[1], destination: AIRPORTS[0] },
+    route: { origin: getAirportByCode('DPS'), destination: getAirportByCode('CGK') },
     scheduledDeparture: '08:10',
     estimatedDeparture: '08:05',
     scheduledArrival: '09:00',
@@ -319,19 +556,6 @@ export const FLIGHT_STATUSES: FlightStatusRecord[] = [
     carousel: 'D3',
     status: 'ARRIVED',
     aircraft: 'Airbus A320neo',
-  },
-  {
-    flightNumber: 'MDK 608',
-    route: { origin: AIRPORTS[3], destination: AIRPORTS[7] },
-    scheduledDeparture: '14:00',
-    estimatedDeparture: '--:--',
-    scheduledArrival: '16:30',
-    estimatedArrival: '--:--',
-    gate: '--',
-    terminal: 'T1',
-    carousel: '--',
-    status: 'CANCELLED',
-    aircraft: 'Boeing 737-800',
   },
 ];
 
@@ -376,6 +600,99 @@ export const INITIAL_USER: MudikMember = {
 };
 
 export const DESTINATIONS: DestinationItem[] = [
+  // Nuevos destinos solicitados (Argentina e Internacionales)
+  {
+    id: 'dest-bariloche',
+    code: 'BRC',
+    city: 'Bariloche',
+    country: 'Argentina',
+    tagline: 'Lagos cristalinos y cordillera andina.',
+    category: 'NATURALEZA',
+    description: 'La joya de la Patagonia argentina. Vistas panorámicas del Lago Nahuel Huapi, rutas de chocolate artesanal y cerros emblemáticos para todas las estaciones.',
+    highlights: ['Circuito Chico y Punto Panorámico', 'Cerro Campanario y teleférico', 'Colonia Suiza y curanto dominical', 'Chocolaterías históricas de calle Mitre'],
+    localFood: ['Trucha patagónica a la manteca negra', 'Cordero al asador con hierbas', 'Fondue de chocolate alpino'],
+    flightTimeFromCGK: '2h 15m desde AEP',
+    priceFromUSD: 54,
+    gradient: 'from-[#263A79]/80 to-[#5F429A]/90',
+    imageUrl: 'https://images.unsplash.com/photo-1579618218290-24a26f63a728?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    id: 'dest-mendoza',
+    code: 'MDZ',
+    city: 'Mendoza',
+    country: 'Argentina',
+    tagline: 'Tierra del sol y del buen vino.',
+    category: 'EXPERIENCIAS',
+    description: 'Bajo la sombra del imponente Aconcagua, Mendoza combina bodegas de clase mundial en el Valle de Uco con el relax de las termas y la gastronomía andina.',
+    highlights: ['Caminos del vino en Valle de Uco y Luján de Cuyo', 'Parque Provincial Aconcagua', 'Termas de Cacheuta', 'Plaza Independencia y arboledas históricas'],
+    localFood: ['Asado con corte ojo de bife', 'Empanadas mendocinas al horno de barro', 'Maridaje con Malbec de altura'],
+    flightTimeFromCGK: '1h 50m desde AEP',
+    priceFromUSD: 48,
+    gradient: 'from-[#5F429A]/80 to-[#465B71]/90',
+    imageUrl: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    id: 'dest-iguazu',
+    code: 'IGR',
+    city: 'Puerto Iguazú',
+    country: 'Argentina',
+    tagline: 'Fuerza natural incontenible.',
+    category: 'NATURALEZA',
+    description: 'Maravilla natural del mundo. Más de 275 saltos de agua rodeados por la densa selva misionera y el rugido sobrecogedor de la Garganta del Diablo.',
+    highlights: ['Pasarelas hacia la Garganta del Diablo', 'Paseo en lancha Gran Aventura bajo las cataratas', 'Hito Tres Fronteras', 'Senderos de flora y fauna en la selva paranaense'],
+    localFood: ['Pacú y surubí de río', 'Mbeju y chipá tradicional', 'Helado de yerba mate y frutos nativos'],
+    flightTimeFromCGK: '1h 55m desde AEP',
+    priceFromUSD: 52,
+    gradient: 'from-[#465B71]/80 to-[#263A79]/90',
+    imageUrl: 'https://images.unsplash.com/photo-1518457607834-6e8d80c183c5?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    id: 'dest-rio',
+    code: 'GIG',
+    city: 'Río de Janeiro',
+    country: 'Brasil',
+    tagline: 'La ciudad maravillosa.',
+    category: 'PLAYAS',
+    description: 'La fusión perfecta entre mar turquesa, selva atlántica y la calidez del pueblo carioca entre Copacabana, Ipanema y el Cristo Redentor.',
+    highlights: ['Cristo Redentor en el cerro Corcovado', 'Teleférico del Pan de Azúcar al atardecer', 'Playas de Ipanema y Copacabana', 'Escalera de Selarón en Lapa'],
+    localFood: ['Feijoada completa con farofa', 'Açaí helado con granola fresca', 'Pão de queijo y caipirinha tradicional'],
+    flightTimeFromCGK: '3h 05m desde EZE',
+    priceFromUSD: 395,
+    gradient: 'from-[#263A79]/80 to-[#5F429A]/90',
+    imageUrl: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    id: 'dest-miami',
+    code: 'MIA',
+    city: 'Miami',
+    country: 'Estados Unidos',
+    tagline: 'El epicentro vibrante del sol.',
+    category: 'CIUDADES',
+    description: 'Arquitectura Art Déco en South Beach, gastronomía fusión de primer nivel, distrito de galerías de Wynwood y playas de aguas cálidas todo el año.',
+    highlights: ['Distrito Art Déco de Ocean Drive', 'Murales y arte urbano en Wynwood Walls', 'Compras en Design District y Brickell', 'Bahía de Biscayne en crucero al atardecer'],
+    localFood: ['Sándwich cubano auténtico en Little Havana', 'Ceviche y mariscos de Florida', 'Key lime pie con merengue dorado'],
+    flightTimeFromCGK: '9h 25m desde EZE',
+    priceFromUSD: 780,
+    gradient: 'from-[#5F429A]/80 to-[#263A79]/90',
+    imageUrl: 'https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    id: 'dest-madrid',
+    code: 'MAD',
+    city: 'Madrid',
+    country: 'España',
+    tagline: 'Cultura, terrazas y vida sin fin.',
+    category: 'CULTURA',
+    description: 'La capital imperial española ofrece una oferta museística inigualable en el Paseo del Arte, tapeo en La Latina y atardeceres mágicos en el Templo de Debod.',
+    highlights: ['Museo del Prado y Reina Sofía', 'Paseo por el Parque de El Retiro (UNESCO)', 'Plaza Mayor y Mercado de San Miguel', 'Gran Vía y musicales nocturnos'],
+    localFood: ['Tapas de jamón ibérico de bellota', 'Bocadillo de calamares crujiente', 'Churros con chocolate en San Ginés'],
+    flightTimeFromCGK: '12h 10m desde EZE',
+    priceFromUSD: 980,
+    gradient: 'from-[#263A79]/80 to-[#465B71]/90',
+    imageUrl: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?auto=format&fit=crop&w=900&q=80',
+  },
+
+  // Destinos Indonesia (Conservados intactos)
   {
     id: 'dest-bali',
     code: 'DPS',
@@ -570,38 +887,141 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
 ];
 
+export interface RoutePriceInfo {
+  basePrice: number;
+  category: 'cabotaje' | 'sudamerica' | 'usa' | 'europa' | 'indonesia';
+  variationRange: number;
+}
+
+export const getRouteBasePrice = (originCode: string, destCode: string): RoutePriceInfo => {
+  const argentineAirports = ['AEP', 'EZE', 'BRC', 'MDZ', 'IGR', 'COR', 'SLA'];
+  const sudamericaAirports = ['SCL', 'GIG', 'GRU', 'LIM', 'MVD'];
+  const usaAirports = ['MIA', 'JFK', 'MCO'];
+  const europaAirports = ['MAD', 'BCN', 'FCO'];
+
+  const isOrigArg = argentineAirports.includes(originCode);
+  const isDestArg = argentineAirports.includes(destCode);
+
+  // Cabotaje Nacional Argentina: US$ 30 a US$ 75 por tramo (US$ 60 a US$ 150 ida y vuelta)
+  if (isOrigArg && isDestArg) {
+    const cabotajeRates: Record<string, number> = {
+      'BRC': 54, // Bariloche
+      'MDZ': 48, // Mendoza
+      'IGR': 52, // Iguazú
+      'COR': 36, // Córdoba
+      'SLA': 58, // Salta
+      'AEP': 42,
+      'EZE': 45,
+    };
+    return {
+      basePrice: cabotajeRates[destCode] || 48,
+      category: 'cabotaje',
+      variationRange: 10,
+    };
+  }
+
+  // Sudamérica Regional: US$ 375 a US$ 450
+  if (
+    (isOrigArg && sudamericaAirports.includes(destCode)) ||
+    (sudamericaAirports.includes(originCode) && isDestArg) ||
+    (sudamericaAirports.includes(originCode) && sudamericaAirports.includes(destCode))
+  ) {
+    const sudamericaRates: Record<string, number> = {
+      'MVD': 380, // Montevideo
+      'SCL': 385, // Santiago
+      'GRU': 410, // São Paulo
+      'GIG': 395, // Río de Janeiro
+      'LIM': 430, // Lima
+    };
+    return {
+      basePrice: sudamericaRates[destCode] || sudamericaRates[originCode] || 395,
+      category: 'sudamerica',
+      variationRange: 30,
+    };
+  }
+
+  // Estados Unidos: US$ 700 a US$ 1.150
+  if (
+    (isOrigArg && usaAirports.includes(destCode)) ||
+    (usaAirports.includes(originCode) && isDestArg) ||
+    (usaAirports.includes(originCode) && usaAirports.includes(destCode))
+  ) {
+    const usaRates: Record<string, number> = {
+      'MIA': 780,  // Miami
+      'MCO': 850,  // Orlando
+      'JFK': 1050, // Nueva York JFK
+    };
+    return {
+      basePrice: usaRates[destCode] || usaRates[originCode] || 890,
+      category: 'usa',
+      variationRange: 60,
+    };
+  }
+
+  // Europa: US$ 950 a US$ 1.550+
+  if (
+    (isOrigArg && europaAirports.includes(destCode)) ||
+    (europaAirports.includes(originCode) && isDestArg) ||
+    (europaAirports.includes(originCode) && europaAirports.includes(destCode))
+  ) {
+    const europaRates: Record<string, number> = {
+      'MAD': 980,  // Madrid
+      'BCN': 1080, // Barcelona
+      'FCO': 1220, // Roma
+    };
+    return {
+      basePrice: europaRates[destCode] || europaRates[originCode] || 1100,
+      category: 'europa',
+      variationRange: 90,
+    };
+  }
+
+  // Indonesia & Sudeste Asiático (US$ 38 a US$ 89)
+  const matchDest = DESTINATIONS.find(d => d.code === destCode);
+  return {
+    basePrice: matchDest?.priceFromUSD || 54,
+    category: 'indonesia',
+    variationRange: 14,
+  };
+};
+
 export const getMonthFares = (
   originCode: string,
   destCode: string,
   year: number,
   month: number // 1-12
 ): DayFare[] => {
-  let basePrice = 58;
-  const matchDest = DESTINATIONS.find(d => d.code === destCode);
-  if (matchDest) {
-    basePrice = matchDest.priceFromUSD;
-  }
-  
+  const routeInfo = getRouteBasePrice(originCode, destCode);
+  const basePrice = routeInfo.basePrice;
   const daysInMonth = new Date(year, month, 0).getDate();
   const dayFares: DayFare[] = [];
-  
+
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const dayOfWeek = new Date(year, month - 1, day).getDay(); // 0 is Sunday, 5 is Friday
-    
-    // Deterministic price variation based on day of week and day number
-    let variation = 0;
-    if (dayOfWeek === 5 || dayOfWeek === 0) { // Friday & Sunday peak
-      variation = 18;
-    } else if (dayOfWeek === 6) { // Saturday
-      variation = 12;
-    } else if (dayOfWeek === 2 || dayOfWeek === 3) { // Tuesday & Wednesday cheapest
-      variation = -8;
+    const dayOfWeek = new Date(year, month - 1, day).getDay();
+
+    let dayFactor = 0;
+    if (dayOfWeek === 5 || dayOfWeek === 0) { // Viernes y Domingo pico
+      dayFactor = 0.12;
+    } else if (dayOfWeek === 6) { // Sábado
+      dayFactor = 0.06;
+    } else if (dayOfWeek === 2 || dayOfWeek === 3) { // Martes y Miércoles más económico
+      dayFactor = -0.06;
     }
 
-    const seed = (day * 7 + month * 13) % 15;
-    const price = Math.max(34, basePrice + variation + (seed - 7));
-    
+    const pseudoNoise = ((day * 7 + month * 13) % 15 - 7) / 75;
+    const computedPrice = Math.round(basePrice * (1 + dayFactor + pseudoNoise));
+    const minFloor = routeInfo.category === 'cabotaje' 
+      ? 30 
+      : routeInfo.category === 'sudamerica' 
+      ? 375 
+      : routeInfo.category === 'usa' 
+      ? 700 
+      : routeInfo.category === 'europa' 
+      ? 950 
+      : 36;
+    const price = Math.max(minFloor, computedPrice);
+
     dayFares.push({
       date: dateStr,
       dayNumber: day,
@@ -611,10 +1031,9 @@ export const getMonthFares = (
     });
   }
 
-  // Tag the lowest 25% fares
   const sortedPrices = [...dayFares].map(d => d.priceUSD).sort((a, b) => a - b);
   const lowestThreshold = sortedPrices[Math.floor(sortedPrices.length * 0.25)] || sortedPrices[0];
-  
+
   dayFares.forEach(d => {
     if (d.priceUSD <= lowestThreshold) {
       d.isLowest = true;

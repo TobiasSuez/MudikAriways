@@ -26,6 +26,7 @@ import { AccountDashboardView } from './components/auth/AccountDashboardView';
 import { AuthModal } from './components/auth/AuthModal';
 import { FareCalendarView } from './components/calendar/FareCalendarView';
 import { AboutUsView } from './components/about/AboutUsView';
+import { NewsletterBenefit } from './components/home/NewsletterBenefit';
 
 const MainContent: React.FC = () => {
   const { currentPage } = useApp();
@@ -36,6 +37,7 @@ const MainContent: React.FC = () => {
         <>
           <HeroSection />
           <EditorialDestinations />
+          <NewsletterBenefit />
         </>
       )}
 

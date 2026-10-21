@@ -1,8 +1,8 @@
 export type Language = 'ES' | 'EN';
-export type Currency = 'USD' | 'IDR';
+export type Currency = 'USD' | 'ARS';
 
 export type TripType = 'roundTrip' | 'oneWay' | 'multiCity';
-export type CabinClass = 'Economy' | 'Premium';
+export type CabinClass = 'Economy' | 'Premium' | 'Business' | 'First';
 
 export interface Airport {
   code: string;
@@ -182,6 +182,20 @@ export interface DayFare {
   priceUSD: number;
   isLowest?: boolean;
   isAvailable: boolean;
+}
+
+export interface LockedFare {
+  lockCode: string;
+  flight: Flight;
+  fareTier: FareTier;
+  tripType: TripType;
+  departureDate: string;
+  returnDate?: string;
+  lockedAt: string;
+  expiresAt: string;
+  durationHours: 24 | 48;
+  feeUSD: number;
+  priceUSD: number;
 }
 
 export type PageView = 

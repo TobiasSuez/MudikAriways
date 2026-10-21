@@ -1,6 +1,6 @@
 {
-  "summary":  "Plan de implementación detallado para adaptación móvil integral de calendarios y buscador, buscador multidestino funcional con hasta 4 tramos y selección por segmento, ranura configurable para logo corporativo, fotografías reales para tarjetas de destinos y nueva página interactiva 'Sobre Nosotros'.",
-  "updatedAt":  "2026-10-20T14:33:23.042025832Z",
+  "summary":  "Plan de implementación detallado para incorporar las 4 clases de cabina (Economy, Premium Economy, Business, First Class), calibrar tarifas internacionales y de cabotaje realistas desde Buenos Aires (Sudamérica, EE.UU., Europa), depurar el espaciado de la Navbar y Footer, limpiar el Hero y bloquear la selección de aeropuertos idénticos en origen y destino.",
+  "updatedAt":  "2026-10-21T21:53:02.471659903Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

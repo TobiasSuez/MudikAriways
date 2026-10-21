@@ -8,6 +8,7 @@ import {
   FareTier, 
   Flight, 
   Language, 
+  LockedFare,
   MudikMember, 
   MultiCitySegment,
   PageView, 
@@ -81,6 +82,10 @@ interface AppContextType {
   latestBooking: Booking | null;
   completeBooking: (method: 'card' | 'wallet' | 'points') => Booking;
 
+  // Fare Lock (Feature Low-Cost)
+  lockedFare: LockedFare | null;
+  setLockedFare: (fare: LockedFare | null) => void;
+
   // Manage Booking
   managedBooking: Booking | null;
   setManagedBooking: (booking: Booking | null) => void;
@@ -106,7 +111,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const IDR_EXCHANGE_RATE = 16250;
+const ARS_EXCHANGE_RATE = 2000; // Cotización dólar tarjeta solicitada: $2.000 ARS por USD
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>('ES');
@@ -114,14 +119,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [currentPage, setCurrentPage] = useState<PageView>('home');
 
   // Search filters
-  const [originAirport, setOriginAirport] = useState<Airport>(AIRPORTS[0]); // Jakarta
-  const [destinationAirport, setDestinationAirport] = useState<Airport>(AIRPORTS[1]); // Bali
+  const [originAirport, setOriginAirport] = useState<Airport>(AIRPORTS[0]); // AEP (Buenos Aires Aeroparque)
+  const [destinationAirport, setDestinationAirport] = useState<Airport>(AIRPORTS[2]); // BRC (Bariloche)
   const [departureDate, setDepartureDate] = useState<string>('2026-10-15');
   const [returnDate, setReturnDate] = useState<string>('2026-10-22');
   const [tripType, setTripType] = useState<TripType>('roundTrip');
   const [multiCitySegments, setMultiCitySegments] = useState<MultiCitySegment[]>([
-    { id: 'seg-1', origin: AIRPORTS[0], destination: AIRPORTS[1], departureDate: '2026-10-15' },
-    { id: 'seg-2', origin: AIRPORTS[1], destination: AIRPORTS[5], departureDate: '2026-10-19' },
+    { id: 'seg-1', origin: AIRPORTS[0], destination: AIRPORTS[2], departureDate: '2026-10-15' },
+    { id: 'seg-2', origin: AIRPORTS[2], destination: AIRPORTS[3], departureDate: '2026-10-19' },
   ]);
 
   const addMultiCitySegment = () => {
@@ -187,6 +192,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   const [bookingStep, setBookingStep] = useState<number>(1);
   const [latestBooking, setLatestBooking] = useState<Booking | null>(null);
+  const [lockedFare, setLockedFare] = useState<LockedFare | null>(null);
 
   // Manage Booking & Check-in
   const [managedBooking, setManagedBooking] = useState<Booking | null>(DEMO_BOOKING);
@@ -201,11 +207,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Currency formatter
   const formatPrice = (usd: number) => {
-    if (currency === 'IDR') {
-      const idrAmount = Math.round(usd * IDR_EXCHANGE_RATE);
-      return `IDR ${idrAmount.toLocaleString('id-ID')}`;
+    if (currency === 'ARS') {
+      const arsAmount = Math.round(usd * ARS_EXCHANGE_RATE);
+      return `$ ${arsAmount.toLocaleString('es-AR')} ARS`;
     }
-    return `USD ${usd}`;
+    return `$ ${usd} USD`;
   };
 
   const navigateTo = (page: PageView) => {
@@ -227,7 +233,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const selectDestinationForSearch = (code: string) => {
     const found = AIRPORTS.find(a => a.code === code);
     if (found) {
-      setOriginAirport(AIRPORTS[0]); // Jakarta CGK
+      if (originAirport.code === found.code) {
+        const alt = AIRPORTS.find(a => a.code !== found.code);
+        if (alt) setOriginAirport(alt);
+      }
       setDestinationAirport(found);
       navigateTo('home');
       // Scroll to widget smoothly
@@ -458,6 +467,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setBookingStep,
         latestBooking,
         completeBooking,
+        lockedFare,
+        setLockedFare,
         managedBooking,
         setManagedBooking,
         loadDemoBooking,

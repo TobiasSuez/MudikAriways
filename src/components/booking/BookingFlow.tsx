@@ -17,7 +17,8 @@ import {
   Sparkles, 
   ShieldCheck, 
   Wallet,
-  Coins
+  Coins,
+  Lock
 } from 'lucide-react';
 
 export const BookingFlow: React.FC = () => {
@@ -41,7 +42,8 @@ export const BookingFlow: React.FC = () => {
     navigateTo,
     t,
     passengers,
-    selectedMultiCityFlights
+    selectedMultiCityFlights,
+    lockedFare
   } = useApp();
 
   const totalSeatPassengers = Math.max(1, (passengers?.adults || 1) + (passengers?.children || 0));
@@ -88,7 +90,8 @@ export const BookingFlow: React.FC = () => {
   if (extras.inFlightWifi) extrasCost += 9;
 
   const taxesAndFees = 18 * totalSeatPassengers;
-  const grandTotal = flightBasePrice + returnBasePrice + totalSeatsPriceUSD + extrasCost + taxesAndFees;
+  const lockCreditUSD = lockedFare ? lockedFare.feeUSD : 0;
+  const grandTotal = Math.max(0, flightBasePrice + returnBasePrice + totalSeatsPriceUSD + extrasCost + taxesAndFees - lockCreditUSD);
 
   const handleSeatSelected = (seatId: string, price: number) => {
     handleMultiSeatSelect(activePassengerIndex, seatId, price);
@@ -861,6 +864,17 @@ export const BookingFlow: React.FC = () => {
                     <span>{t('Tasas aeroportuarias e impuestos', 'Taxes & airport fees')}</span>
                     <span className="font-bold text-[#191A23] tabular-nums">{formatPrice(taxesAndFees)}</span>
                   </div>
+
+                  {/* Fare Lock discount / credit if applicable */}
+                  {lockedFare && (
+                    <div className="flex items-center justify-between text-xs text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200">
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>{t('Crédito Tarifa Congelada', 'Fare Lock Credit')} ({lockedFare.lockCode})</span>
+                      </div>
+                      <span className="font-mono font-bold text-emerald-700">- {formatPrice(lockedFare.feeUSD)}</span>
+                    </div>
+                  )}
 
                 </div>
 

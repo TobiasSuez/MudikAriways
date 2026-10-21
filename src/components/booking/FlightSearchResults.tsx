@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { MOCK_FLIGHTS, AIRPORTS, getMonthFares } from '../../data/mockData';
+import { MOCK_FLIGHTS, AIRPORTS, getMonthFares, getRouteBasePrice } from '../../data/mockData';
 import { Flight, FareTier, Airport } from '../../types';
 import { 
   ArrowLeft, 
@@ -23,8 +23,12 @@ import {
   Info,
   ArrowRight,
   MapPin,
-  CalendarDays
+  CalendarDays,
+  Lock,
+  Armchair,
+  Crown
 } from 'lucide-react';
+import { FareLockModal } from './FareLockModal';
 
 export const FlightSearchResults: React.FC = () => {
   const {
@@ -39,15 +43,21 @@ export const FlightSearchResults: React.FC = () => {
     selectedMultiCityFlights,
     setSelectedMultiCityFlights,
     passengers,
+    cabinClass,
     formatPrice,
     setSelectedOutboundFlight,
     setSelectedFareTier,
     selectedFareTier,
     navigateTo,
     setBookingStep,
+    lockedFare,
+    setLockedFare,
     t,
     language
   } = useApp();
+
+  // Fare Lock state
+  const [lockTarget, setLockTarget] = useState<{ flight: Flight; tier: FareTier } | null>(null);
 
   // Multi-city active segment state
   const [activeSegmentIndex, setActiveSegmentIndex] = useState<number>(0);
@@ -58,7 +68,7 @@ export const FlightSearchResults: React.FC = () => {
   const [filterStops, setFilterStops] = useState<'all' | 'direct'>('all');
   const [filterTime, setFilterTime] = useState<'all' | 'early' | 'morning' | 'afternoon' | 'evening'>('all');
   const [filterAircraft, setFilterAircraft] = useState<'all' | 'A320' | 'B737'>('all');
-  const [maxPrice, setMaxPrice] = useState<number>(200);
+  const [userMaxPrice, setUserMaxPrice] = useState<number | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
   const [expandedFlightId, setExpandedFlightId] = useState<string | null>(null);
 
@@ -78,74 +88,144 @@ export const FlightSearchResults: React.FC = () => {
   const activeDest: Airport = isMultiCity && currentSegment ? currentSegment.destination : destinationAirport;
   const activeDate: string = isMultiCity && currentSegment ? currentSegment.departureDate : departureDate;
 
+  // Cabin class multipliers
+  const classMultiplier = cabinClass === 'First' ? 3.8 : cabinClass === 'Business' ? 2.4 : cabinClass === 'Premium' ? 1.45 : 1.0;
+  const routeInfo = getRouteBasePrice(activeOrigin.code, activeDest.code);
+  const maxPriceCap = Math.max(300, Math.round(routeInfo.basePrice * classMultiplier * 2.2));
+  const effectiveMaxPrice = userMaxPrice ?? maxPriceCap;
+
   // Build available flights dynamically for the active route
   const getFlightsForRoute = (orig: Airport, dest: Airport): Flight[] => {
-    // Check if MOCK_FLIGHTS has flights matching this pair
+    // Check if MOCK_FLIGHTS has direct flights matching this pair
     const directMatches = MOCK_FLIGHTS.filter(
       f => f.origin.code === orig.code && f.destination.code === dest.code
     );
 
     if (directMatches.length > 0) {
-      return directMatches;
+      return directMatches.map(f => ({
+        ...f,
+        fares: {
+          basic: Math.round(f.fares.basic * classMultiplier),
+          smart: Math.round(f.fares.smart * classMultiplier),
+          flex: Math.round(f.fares.flex * classMultiplier),
+        }
+      }));
     }
 
-    // Synthesize 4 realistic scheduled flights for any pair in Indonesia
+    // Synthesize realistic flights based on route base price and category
+    const routeData = getRouteBasePrice(orig.code, dest.code);
+    const b = routeData.basePrice;
+
+    let duration1 = '1h 50m';
+    let duration2 = '2h 10m';
+    let duration3 = '1h 55m';
+    let duration4 = '2h 00m';
+    let aircraftLong = 'Boeing 737-800';
+    let aircraftMed = 'Airbus A320neo';
+    let aircraftShort = 'Airbus A320-200';
+
+    if (routeData.category === 'sudamerica') {
+      duration1 = '2h 20m';
+      duration2 = '3h 10m';
+      duration3 = '2h 45m';
+      duration4 = '4h 50m';
+      aircraftLong = 'Boeing 737 MAX 8';
+      aircraftMed = 'Airbus A320neo';
+      aircraftShort = 'Airbus A321neo';
+    } else if (routeData.category === 'usa') {
+      duration1 = '9h 15m';
+      duration2 = '9h 40m';
+      duration3 = '10h 50m';
+      duration4 = '11h 25m';
+      aircraftLong = 'Airbus A350-900';
+      aircraftMed = 'Boeing 787-9 Dreamliner';
+      aircraftShort = 'Airbus A330-900neo';
+    } else if (routeData.category === 'europa') {
+      duration1 = '12h 10m';
+      duration2 = '12h 35m';
+      duration3 = '12h 50m';
+      duration4 = '13h 20m';
+      aircraftLong = 'Airbus A350-900';
+      aircraftMed = 'Boeing 777-300ER';
+      aircraftShort = 'Airbus A350-1000';
+    }
+
+    const baggageDesc = routeData.category === 'cabotaje' || routeData.category === 'indonesia'
+      ? (cabinClass === 'Business' || cabinClass === 'First' ? 'Equipaje 2x 32 kg + Lounge VIP' : 'Equipaje de mano 7 kg')
+      : (cabinClass === 'Business' || cabinClass === 'First' ? 'Equipaje 3x 32 kg + Lounge VIP' : 'Equipaje despachado 23 kg + 10 kg cabina');
+
     return [
       {
         id: `synth-${orig.code}-${dest.code}-1`,
-        flightNumber: `MDK ${Math.floor(200 + Math.random() * 600)}`,
+        flightNumber: `MDK ${Math.floor(200 + (orig.code.charCodeAt(0) * 7) % 700)}`,
         origin: orig,
         destination: dest,
         departureTime: '07:15',
         arrivalTime: '09:05',
-        duration: '1h 50m',
+        duration: duration1,
         isDirect: true,
         stopsCount: 0,
-        aircraft: 'Airbus A320neo',
-        fares: { basic: 49, smart: 72, flex: 105 },
-        baggageIncluded: 'Equipaje de mano 7 kg',
+        aircraft: aircraftMed,
+        fares: {
+          basic: Math.round(b * classMultiplier),
+          smart: Math.round(b * 1.3 * classMultiplier),
+          flex: Math.round(b * 1.65 * classMultiplier),
+        },
+        baggageIncluded: baggageDesc,
       },
       {
         id: `synth-${orig.code}-${dest.code}-2`,
-        flightNumber: `MDK ${Math.floor(200 + Math.random() * 600)}`,
+        flightNumber: `MDK ${Math.floor(250 + (dest.code.charCodeAt(0) * 11) % 650)}`,
         origin: orig,
         destination: dest,
-        departureTime: '10:40',
-        arrivalTime: '12:35',
-        duration: '1h 55m',
+        departureTime: '11:40',
+        arrivalTime: '13:35',
+        duration: duration2,
         isDirect: true,
         stopsCount: 0,
-        aircraft: 'Boeing 737-800',
-        fares: { basic: 58, smart: 79, flex: 115 },
-        baggageIncluded: 'Equipaje de mano 7 kg',
+        aircraft: aircraftLong,
+        fares: {
+          basic: Math.round((b + routeData.variationRange * 0.6) * classMultiplier),
+          smart: Math.round((b + routeData.variationRange * 0.6) * 1.3 * classMultiplier),
+          flex: Math.round((b + routeData.variationRange * 0.6) * 1.65 * classMultiplier),
+        },
+        baggageIncluded: baggageDesc,
       },
       {
         id: `synth-${orig.code}-${dest.code}-3`,
-        flightNumber: `MDK ${Math.floor(200 + Math.random() * 600)}`,
+        flightNumber: `MDK ${Math.floor(300 + (orig.code.charCodeAt(1) * 13) % 600)}`,
         origin: orig,
         destination: dest,
-        departureTime: '15:20',
-        arrivalTime: '17:10',
-        duration: '1h 50m',
+        departureTime: '16:20',
+        arrivalTime: '18:10',
+        duration: duration3,
         isDirect: true,
         stopsCount: 0,
-        aircraft: 'Airbus A320neo',
-        fares: { basic: 64, smart: 85, flex: 124 },
-        baggageIncluded: 'Equipaje de mano 7 kg',
+        aircraft: aircraftShort,
+        fares: {
+          basic: Math.round((b - routeData.variationRange * 0.4) * classMultiplier),
+          smart: Math.round((b - routeData.variationRange * 0.4) * 1.3 * classMultiplier),
+          flex: Math.round((b - routeData.variationRange * 0.4) * 1.65 * classMultiplier),
+        },
+        baggageIncluded: baggageDesc,
       },
       {
         id: `synth-${orig.code}-${dest.code}-4`,
-        flightNumber: `MDK ${Math.floor(200 + Math.random() * 600)}`,
+        flightNumber: `MDK ${Math.floor(350 + (dest.code.charCodeAt(1) * 17) % 550)}`,
         origin: orig,
         destination: dest,
-        departureTime: '19:45',
-        arrivalTime: '21:35',
-        duration: '1h 50m',
+        departureTime: '20:45',
+        arrivalTime: '22:35',
+        duration: duration4,
         isDirect: true,
         stopsCount: 0,
-        aircraft: 'Airbus A320-200',
-        fares: { basic: 52, smart: 74, flex: 108 },
-        baggageIncluded: 'Equipaje de mano 7 kg',
+        aircraft: aircraftMed,
+        fares: {
+          basic: Math.round((b + routeData.variationRange * 0.2) * classMultiplier),
+          smart: Math.round((b + routeData.variationRange * 0.2) * 1.3 * classMultiplier),
+          flex: Math.round((b + routeData.variationRange * 0.2) * 1.65 * classMultiplier),
+        },
+        baggageIncluded: baggageDesc,
       },
     ];
   };
@@ -171,7 +251,7 @@ export const FlightSearchResults: React.FC = () => {
     if (filterAircraft === 'B737' && !f.aircraft.includes('737')) return false;
 
     // Max Price
-    if (f.fares.basic > maxPrice) return false;
+    if (userMaxPrice !== null && f.fares.basic > userMaxPrice) return false;
 
     return true;
   });
@@ -268,10 +348,10 @@ export const FlightSearchResults: React.FC = () => {
     setFilterStops('all');
     setFilterTime('all');
     setFilterAircraft('all');
-    setMaxPrice(200);
+    setUserMaxPrice(null);
   };
 
-  const isAnyFilterActive = filterStops !== 'all' || filterTime !== 'all' || filterAircraft !== 'all' || maxPrice < 200;
+  const isAnyFilterActive = filterStops !== 'all' || filterTime !== 'all' || filterAircraft !== 'all' || userMaxPrice !== null;
   const totalPassengers = passengers.adults + passengers.children + passengers.infants;
 
   // Surrounding days calculation (-3 to +3)
@@ -309,6 +389,58 @@ export const FlightSearchResults: React.FC = () => {
     <div className="min-h-screen bg-[#FAF9FD] py-6 sm:py-10 px-3 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
         
+        {/* ACTIVE LOCKED FARE HERO BANNER */}
+        {lockedFare && (
+          <div className="bg-gradient-to-r from-[#263A79] via-[#45469C] to-[#5F429A] text-white p-5 rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-white/20 animate-in fade-in">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white shrink-0 shadow-inner">
+                <Lock className="w-6 h-6 text-emerald-300" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-400 text-[#191A23] px-2 py-0.5 rounded shadow-xs">
+                    {t('TARIFA CONGELADA ACTIVA', 'LOCKED FARE ACTIVE')}
+                  </span>
+                  <span className="font-mono text-xs font-bold text-emerald-200">
+                    {lockedFare.lockCode}
+                  </span>
+                  <span className="text-[11px] text-white/80">
+                    · {lockedFare.durationHours}h {t('de protección garantizada', 'guaranteed price protection')}
+                  </span>
+                </div>
+                <div className="font-extrabold text-base text-white mt-1">
+                  {lockedFare.flight.flightNumber} ({lockedFare.flight.origin.code} → {lockedFare.flight.destination.code}) · Tarifa {lockedFare.fareTier.toUpperCase()}: <span className="font-mono text-emerald-300">{formatPrice(lockedFare.priceUSD)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0 self-end md:self-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedOutboundFlight(lockedFare.flight);
+                  setSelectedFareTier(lockedFare.fareTier);
+                  setBookingStep(2);
+                  navigateTo('booking');
+                }}
+                className="px-5 py-2.5 bg-white hover:bg-neutral-100 text-[#263A79] font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <span>{t('EMITIR CON PRECIO CONGELADO', 'BOOK WITH LOCKED FARE')}</span>
+                <ArrowRight className="w-4 h-4 text-[#5F429A]" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLockedFare(null)}
+                className="p-2 text-white/60 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+                title={t('Cerrar aviso', 'Dismiss')}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Navigation back and header summary */}
         <div className="bg-white rounded-2xl p-5 sm:p-6 border border-neutral-200/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
@@ -697,15 +829,15 @@ export const FlightSearchResults: React.FC = () => {
                   <label className="font-bold text-[#465B71] uppercase tracking-wider text-[10px]">
                     {t('PRECIO MÁXIMO', 'MAX PRICE')}
                   </label>
-                  <span className="font-mono font-bold text-[#5F429A]">{formatPrice(maxPrice)}</span>
+                  <span className="font-mono font-bold text-[#5F429A]">{formatPrice(effectiveMaxPrice)}</span>
                 </div>
                 <input
                   type="range"
-                  min="30"
-                  max="200"
-                  step="5"
-                  value={maxPrice}
-                  onChange={e => setMaxPrice(parseInt(e.target.value, 10))}
+                  min={Math.round(routeInfo.basePrice * classMultiplier * 0.7)}
+                  max={maxPriceCap}
+                  step={routeInfo.basePrice > 300 ? 25 : 5}
+                  value={effectiveMaxPrice}
+                  onChange={e => setUserMaxPrice(parseInt(e.target.value, 10))}
                   className="w-full accent-[#5F429A]"
                 />
               </div>
@@ -848,133 +980,315 @@ export const FlightSearchResults: React.FC = () => {
                   </div>
 
                   {/* Expandable Fare Tiers Matrix (Basic, Smart, Flex) */}
-                  {isExpanded && (
-                    <div className="bg-[#FAF9FD] p-5 sm:p-6 border-t border-neutral-200">
-                      <div className="mb-4">
-                        <h4 className="font-bold text-sm text-[#263A79]">
-                          {t('Elegí tu paquete de tarifa Mudik para este tramo', 'Choose your Mudik fare package')}
-                        </h4>
-                        <p className="text-xs text-[#465B71]">
-                          {t('Transparente: sabés exactamente qué incluye cada tarifa sin costos ocultos.', 'Clear and transparent inclusions.')}
-                        </p>
+                  {isExpanded && (() => {
+                    const getTierData = (tier: 'basic' | 'smart' | 'flex') => {
+                      if (cabinClass === 'First') {
+                        if (tier === 'basic') {
+                          return {
+                            title: 'FIRST SUITE',
+                            desc: t('Privacidad total con suite cerrada.', 'Total privacy in enclosed suite.'),
+                            badge: null,
+                            items: [
+                              t('Suite privada con puerta corrediza', 'Enclosed suite with privacy door'),
+                              t('2 valijas de 32 kg despachadas', '2x 32 kg checked baggage'),
+                              t('Acceso a Mudik VIP First Dining', 'First Class VIP lounge & dining'),
+                              t('Servicio de champán y caviar', 'Welcome caviar & champagne service'),
+                            ]
+                          };
+                        }
+                        if (tier === 'smart') {
+                          return {
+                            title: 'FIRST SIGNATURE',
+                            desc: t('Chofer privado y cama doble en vuelo.', 'Private chauffeur & double bed suite.'),
+                            badge: t('RECOMENDADA FIRST', 'SIGNATURE FIRST'),
+                            items: [
+                              t('Suite convertible a cama matrimonial', 'Suite convertible to double bed'),
+                              t('Traslado en auto privado con chofer', 'Private chauffeur transfer included'),
+                              t('3 valijas de 32 kg despachadas', '3x 32 kg checked baggage'),
+                              t('Menú de autor diseñado por chef', 'Multi-course menu by master chef'),
+                              t('Mudik Points x3 en todas las millas', '3x Mudik Points earn rate'),
+                            ]
+                          };
+                        }
+                        return {
+                          title: 'FIRST ULTRA RESIDENCE',
+                          desc: t('Cúspide del lujo sin penalidades.', 'Ultimate aviation luxury & zero penalties.'),
+                          badge: null,
+                          items: [
+                            t('Suite de dos ambientes The Residence', 'The Residence two-room private suite'),
+                            t('Mayordomo personal y conserje 24/7', 'Personal butler & 24/7 concierge'),
+                            t('Equipaje ilimitado en bodega', 'Unlimited checked baggage'),
+                            t('Cambios y cancelaciones libres sin cargo', 'Free date changes & cancellation'),
+                          ]
+                        };
+                      }
+
+                      if (cabinClass === 'Business') {
+                        if (tier === 'basic') {
+                          return {
+                            title: 'BUSINESS ESSENTIAL',
+                            desc: t('Camas Lie-Flat y lounge VIP.', 'Lie-Flat bed & VIP lounge access.'),
+                            badge: null,
+                            items: [
+                              t('Asiento cama Lie-Flat reclinable 180°', '180° Lie-Flat bed seat'),
+                              t('2 valijas despachadas de 23 kg', '2x 23 kg checked baggage'),
+                              t('Acceso exclusivo a Mudik Lounge VIP', 'Mudik VIP Lounge access'),
+                              t('Embarque prioritario Grupo 1', 'Group 1 priority boarding'),
+                            ]
+                          };
+                        }
+                        if (tier === 'smart') {
+                          return {
+                            title: 'BUSINESS COMFORT',
+                            desc: t('La experiencia ejecutiva más completa.', 'Most complete executive experience.'),
+                            badge: t('RECOMENDADA BUSINESS', 'BEST BUSINESS'),
+                            items: [
+                              t('Asiento Lie-Flat con acceso directo a pasillo', 'Direct aisle access Lie-Flat suite'),
+                              t('2 valijas despachadas de 32 kg', '2x 32 kg checked baggage'),
+                              t('Menú caliente gourmet maridado con vinos', 'Hot gourmet dining with wine pairing'),
+                              t('Fast-Track en seguridad y migraciones', 'Fast-Track security & customs lane'),
+                              t('Mudik Points x2.5', '2.5x Mudik Points'),
+                            ]
+                          };
+                        }
+                        return {
+                          title: 'BUSINESS FREEDOM',
+                          desc: t('Máxima flexibilidad para tu agenda.', 'Total flexibility for your schedule.'),
+                          badge: null,
+                          items: [
+                            t('Suite ejecutiva con panel de privacidad', 'Executive suite with privacy divider'),
+                            t('3 valijas despachadas de 32 kg', '3x 32 kg checked baggage'),
+                            t('Cambios de fecha sin penalización', 'Unlimited free date changes'),
+                            t('Salas de duchas privadas en Mudik Lounge', 'Private arrival shower suites in lounge'),
+                          ]
+                        };
+                      }
+
+                      if (cabinClass === 'Premium') {
+                        if (tier === 'basic') {
+                          return {
+                            title: 'PREMIUM LIGHT',
+                            desc: t('Más espacio y cabina exclusiva.', 'More legroom in dedicated cabin.'),
+                            badge: null,
+                            items: [
+                              t('Asiento ergonómico con +20% reclinación', 'Ergonomic seat with +20% recline'),
+                              t('1 valija de 23 kg + 10 kg cabina', '23 kg checked baggage + 10 kg carry-on'),
+                              t('Embarque preferencial Grupo 2', 'Group 2 priority boarding'),
+                            ]
+                          };
+                        }
+                        if (tier === 'smart') {
+                          return {
+                            title: 'PREMIUM COMFORT',
+                            desc: t('Equipaje completo y asiento con apoya piernas.', 'Full baggage & leg rest.'),
+                            badge: t('RECOMENDADA', 'POPULAR'),
+                            items: [
+                              t('Asiento en filas delanteras con apoya piernas', 'Front row seat with leg rest'),
+                              t('2 valijas de 23 kg despachadas', '2x 23 kg checked baggage'),
+                              t('Snack gourmet caliente y bebida de bienvenida', 'Hot gourmet snack & welcome drink'),
+                              t('Mudik Points x2', '2x Mudik Points'),
+                            ]
+                          };
+                        }
+                        return {
+                          title: 'PREMIUM FLEX',
+                          desc: t('Flexibilidad y todos los beneficios incluidos.', 'Full flexibility & premium comfort.'),
+                          badge: null,
+                          items: [
+                            t('Asiento premium con máximo espacio', 'Premium seat with maximum legroom'),
+                            t('2 valijas de 23 kg + bolso 10 kg', '2x 23 kg checked + 10 kg carry-on'),
+                            t('Cambios de fecha sin penalización', 'Free date changes'),
+                            t('Pase a Mudik Lounge con 50% de descuento', '50% off Mudik Lounge day pass'),
+                          ]
+                        };
+                      }
+
+                      // Standard Economy
+                      if (tier === 'basic') {
+                        return {
+                          title: 'BASIC',
+                          desc: t('Para viajar liviano al mejor precio.', 'Travel light for the lowest cost.'),
+                          badge: null,
+                          items: [
+                            t('Mochila o bolso de mano (7 kg)', 'Cabin bag 7 kg'),
+                            t('Check-in online anticipado', 'Online check-in'),
+                            t('Sin equipaje en bodega', 'No checked baggage'),
+                          ]
+                        };
+                      }
+                      if (tier === 'smart') {
+                        return {
+                          title: 'SMART',
+                          desc: t('El equilibrio perfecto para tus vacaciones.', 'Perfect balance for your holiday.'),
+                          badge: t('RECOMENDADA', 'POPULAR'),
+                          items: [
+                            t('Equipaje en bodega de 20 kg', '20 kg checked baggage'),
+                            t('Bolso de mano 7 kg', 'Cabin bag 7 kg'),
+                            t('Selección de asiento estándar gratuita', 'Standard seat selection included'),
+                            t('Acumula Mudik Points x2', '2x Mudik Points'),
+                          ]
+                        };
+                      }
+                      return {
+                        title: 'FLEX',
+                        desc: t('Flexibilidad total para cambios de fecha.', 'Full flexibility and priority.'),
+                        badge: null,
+                        items: [
+                          t('Equipaje en bodega de 30 kg', '30 kg checked baggage'),
+                          t('Asiento extra legroom sin cargo', 'Extra legroom seat free'),
+                          t('Cambios de fecha sin penalización', 'Free date changes'),
+                          t('Embarque prioritario', 'Priority boarding'),
+                        ]
+                      };
+                    };
+
+                    const basicInfo = getTierData('basic');
+                    const smartInfo = getTierData('smart');
+                    const flexInfo = getTierData('flex');
+
+                    return (
+                      <div className="bg-[#FAF9FD] p-5 sm:p-6 border-t border-neutral-200">
+                        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <h4 className="font-bold text-sm text-[#263A79]">
+                              {t('Elegí tu paquete de tarifa para este tramo', 'Choose your fare package')}
+                            </h4>
+                            <p className="text-xs text-[#465B71]">
+                              {t('Tarifas transparentes con todo lo que necesitás según tu clase.', 'Transparent fares tailored to your selected cabin class.')}
+                            </p>
+                          </div>
+                          <span className="self-start sm:self-auto text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#5F429A]/10 text-[#5F429A] border border-[#5F429A]/20">
+                            {cabinClass === 'Economy' && 'CLASE ECONOMY'}
+                            {cabinClass === 'Premium' && 'PREMIUM ECONOMY'}
+                            {cabinClass === 'Business' && 'BUSINESS CLASS EJECUTIVA'}
+                            {cabinClass === 'First' && 'FIRST CLASS PRIMERA CLASE'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {/* BASIC TIER */}
+                          <div className="bg-white rounded-xl p-5 border border-neutral-200 flex flex-col justify-between hover:border-[#5F429A] transition-all">
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="font-display font-extrabold text-base text-[#263A79]">{basicInfo.title}</span>
+                                <span className="font-mono font-bold text-lg text-[#191A23]">{formatPrice(flight.fares.basic)}</span>
+                              </div>
+                              <p className="text-xs text-[#465B71]">{basicInfo.desc}</p>
+
+                              <ul className="space-y-2 text-xs text-[#465B71] pt-2 border-t border-neutral-100">
+                                {basicInfo.items.map((feat, i) => (
+                                  <li key={i} className="flex items-center gap-2">
+                                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                    <span>{feat}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <div className="space-y-2 mt-6">
+                              <button
+                                onClick={() => handleSelectFlightAndFare(flight, 'basic')}
+                                className="w-full py-2.5 bg-neutral-100 hover:bg-[#5F429A] hover:text-white text-[#263A79] text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                              >
+                                {t('ELEGIR', 'SELECT')} {basicInfo.title}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setLockTarget({ flight, tier: 'basic' })}
+                                className="w-full py-1.5 text-[11px] font-bold text-[#5F429A] hover:bg-[#5F429A]/10 rounded-lg border border-[#5F429A]/30 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                title={t('Congelar tarifa por 24h o 48h', 'Lock this fare for 24h or 48h')}
+                              >
+                                <Lock className="w-3 h-3" />
+                                <span>{t('Congelar tarifa', 'Lock fare')}</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* SMART TIER (RECOMMENDED) */}
+                          <div className="bg-white rounded-xl p-5 border-2 border-[#5F429A] relative shadow-sm flex flex-col justify-between">
+                            {smartInfo.badge && (
+                              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#5F429A] text-white text-[10px] font-black uppercase tracking-widest px-3 py-0.5 rounded-full shadow-xs">
+                                {smartInfo.badge}
+                              </div>
+                            )}
+
+                            <div className="space-y-3 pt-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-display font-extrabold text-base text-[#5F429A]">{smartInfo.title}</span>
+                                <span className="font-mono font-bold text-lg text-[#5F429A]">{formatPrice(flight.fares.smart)}</span>
+                              </div>
+                              <p className="text-xs text-[#465B71]">{smartInfo.desc}</p>
+
+                              <ul className="space-y-2 text-xs text-[#465B71] pt-2 border-t border-neutral-100">
+                                {smartInfo.items.map((feat, i) => (
+                                  <li key={i} className="flex items-center gap-2">
+                                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                    <span>{feat}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <div className="space-y-2 mt-6">
+                              <button
+                                onClick={() => handleSelectFlightAndFare(flight, 'smart')}
+                                className="w-full py-2.5 bg-[#5F429A] hover:bg-[#45469C] text-white text-xs font-bold rounded-lg transition-all shadow-sm cursor-pointer"
+                              >
+                                {t('ELEGIR', 'SELECT')} {smartInfo.title}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setLockTarget({ flight, tier: 'smart' })}
+                                className="w-full py-1.5 text-[11px] font-bold text-[#5F429A] hover:bg-[#5F429A]/10 rounded-lg border border-[#5F429A]/30 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                title={t('Congelar tarifa por 24h o 48h', 'Lock this fare for 24h or 48h')}
+                              >
+                                <Lock className="w-3 h-3" />
+                                <span>{t('Congelar tarifa', 'Lock fare')}</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* FLEX TIER */}
+                          <div className="bg-white rounded-xl p-5 border border-neutral-200 flex flex-col justify-between hover:border-[#5F429A] transition-all">
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="font-display font-extrabold text-base text-[#263A79]">{flexInfo.title}</span>
+                                <span className="font-mono font-bold text-lg text-[#191A23]">{formatPrice(flight.fares.flex)}</span>
+                              </div>
+                              <p className="text-xs text-[#465B71]">{flexInfo.desc}</p>
+
+                              <ul className="space-y-2 text-xs text-[#465B71] pt-2 border-t border-neutral-100">
+                                {flexInfo.items.map((feat, i) => (
+                                  <li key={i} className="flex items-center gap-2">
+                                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                    <span>{feat}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <div className="space-y-2 mt-6">
+                              <button
+                                onClick={() => handleSelectFlightAndFare(flight, 'flex')}
+                                className="w-full py-2.5 bg-neutral-100 hover:bg-[#5F429A] hover:text-white text-[#263A79] text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                              >
+                                {t('ELEGIR', 'SELECT')} {flexInfo.title}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setLockTarget({ flight, tier: 'flex' })}
+                                className="w-full py-1.5 text-[11px] font-bold text-[#5F429A] hover:bg-[#5F429A]/10 rounded-lg border border-[#5F429A]/30 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                title={t('Congelar tarifa por 24h o 48h', 'Lock this fare for 24h or 48h')}
+                              >
+                                <Lock className="w-3 h-3" />
+                                <span>{t('Congelar tarifa', 'Lock fare')}</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        
-                        {/* BASIC TIER */}
-                        <div className="bg-white rounded-xl p-5 border border-neutral-200 flex flex-col justify-between hover:border-[#5F429A] transition-all">
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="font-display font-extrabold text-base text-[#263A79]">BASIC</span>
-                              <span className="font-mono font-bold text-lg text-[#191A23]">{formatPrice(flight.fares.basic)}</span>
-                            </div>
-                            <p className="text-xs text-[#465B71]">{t('Para viajar liviano al mejor precio.', 'Travel light for the lowest cost.')}</p>
-
-                            <ul className="space-y-2 text-xs text-[#465B71] pt-2 border-t border-neutral-100">
-                              <li className="flex items-center gap-2">
-                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span>{t('Mochila o bolso de mano (7 kg)', 'Cabin bag 7 kg')}</span>
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span>{t('Check-in online anticipado', 'Online check-in')}</span>
-                              </li>
-                              <li className="flex items-center gap-2 opacity-50">
-                                <span className="w-3.5 h-3.5 text-center leading-none">✕</span>
-                                <span>{t('Sin equipaje en bodega', 'No checked baggage')}</span>
-                              </li>
-                            </ul>
-                          </div>
-
-                          <button
-                            onClick={() => handleSelectFlightAndFare(flight, 'basic')}
-                            className="w-full mt-6 py-2.5 bg-neutral-100 hover:bg-[#5F429A] hover:text-white text-[#263A79] text-xs font-bold rounded-lg transition-colors cursor-pointer"
-                          >
-                            {t('ELEGIR BASIC', 'SELECT BASIC')}
-                          </button>
-                        </div>
-
-                        {/* SMART TIER (RECOMMENDED) */}
-                        <div className="bg-white rounded-xl p-5 border-2 border-[#5F429A] relative shadow-sm flex flex-col justify-between">
-                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#5F429A] text-white text-[10px] font-black uppercase tracking-widest px-3 py-0.5 rounded-full shadow-xs">
-                            {t('RECOMENDADA', 'POPULAR')}
-                          </div>
-
-                          <div className="space-y-3 pt-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-display font-extrabold text-base text-[#5F429A]">SMART</span>
-                              <span className="font-mono font-bold text-lg text-[#5F429A]">{formatPrice(flight.fares.smart)}</span>
-                            </div>
-                            <p className="text-xs text-[#465B71]">{t('El equilibrio perfecto para tus vacaciones.', 'Perfect balance for your island holiday.')}</p>
-
-                            <ul className="space-y-2 text-xs text-[#465B71] pt-2 border-t border-neutral-100">
-                              <li className="flex items-center gap-2">
-                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span>{t('Equipaje en bodega de 20 kg', '20 kg checked baggage')}</span>
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span>{t('Bolso de mano 7 kg', 'Cabin bag 7 kg')}</span>
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span>{t('Selección de asiento estándar', 'Standard seat selection')}</span>
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span>{t('Acumula Mudik Points x2', '2x Mudik Points')}</span>
-                              </li>
-                            </ul>
-                          </div>
-
-                          <button
-                            onClick={() => handleSelectFlightAndFare(flight, 'smart')}
-                            className="w-full mt-6 py-2.5 bg-[#5F429A] hover:bg-[#45469C] text-white text-xs font-bold rounded-lg transition-all shadow-sm cursor-pointer"
-                          >
-                            {t('ELEGIR SMART', 'SELECT SMART')}
-                          </button>
-                        </div>
-
-                        {/* FLEX TIER */}
-                        <div className="bg-white rounded-xl p-5 border border-neutral-200 flex flex-col justify-between hover:border-[#5F429A] transition-all">
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="font-display font-extrabold text-base text-[#263A79]">FLEX</span>
-                              <span className="font-mono font-bold text-lg text-[#191A23]">{formatPrice(flight.fares.flex)}</span>
-                            </div>
-                            <p className="text-xs text-[#465B71]">{t('Flexibilidad total para cambios de fecha.', 'Full flexibility and priority.')}</p>
-
-                            <ul className="space-y-2 text-xs text-[#465B71] pt-2 border-t border-neutral-100">
-                              <li className="flex items-center gap-2">
-                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span>{t('Equipaje en bodega de 30 kg', '30 kg checked baggage')}</span>
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span>{t('Asiento extra legroom sin cargo', 'Extra legroom seat free')}</span>
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span>{t('Cambios de fecha sin penalización', 'Free date changes')}</span>
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span>{t('Embarque prioritario', 'Priority boarding')}</span>
-                              </li>
-                            </ul>
-                          </div>
-
-                          <button
-                            onClick={() => handleSelectFlightAndFare(flight, 'flex')}
-                            className="w-full mt-6 py-2.5 bg-neutral-100 hover:bg-[#5F429A] hover:text-white text-[#263A79] text-xs font-bold rounded-lg transition-colors cursor-pointer"
-                          >
-                            {t('ELEGIR FLEX', 'SELECT FLEX')}
-                          </button>
-                        </div>
-
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                 </div>
               );
@@ -1082,6 +1396,16 @@ export const FlightSearchResults: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Fare Lock Modal */}
+      {lockTarget && (
+        <FareLockModal
+          isOpen={Boolean(lockTarget)}
+          onClose={() => setLockTarget(null)}
+          flight={lockTarget.flight}
+          fareTier={lockTarget.tier}
+        />
       )}
 
     </div>

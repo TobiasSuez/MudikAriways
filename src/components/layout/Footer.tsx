@@ -240,16 +240,16 @@ export const Footer: React.FC = () => {
             <div className="flex items-center gap-2 border-l border-neutral-700 pl-4">
               <button 
                 onClick={() => setCurrency('USD')} 
-                className={`transition-colors ${currency === 'USD' ? 'text-white font-bold' : 'hover:text-neutral-300'}`}
+                className={`transition-colors cursor-pointer ${currency === 'USD' ? 'text-white font-bold' : 'hover:text-neutral-300'}`}
               >
                 USD ($)
               </button>
               <span>/</span>
               <button 
-                onClick={() => setCurrency('IDR')} 
-                className={`transition-colors ${currency === 'IDR' ? 'text-white font-bold' : 'hover:text-neutral-300'}`}
+                onClick={() => setCurrency('ARS')} 
+                className={`transition-colors cursor-pointer ${currency === 'ARS' ? 'text-white font-bold' : 'hover:text-neutral-300'}`}
               >
-                IDR (Rp)
+                ARS ($)
               </button>
             </div>
           </div>

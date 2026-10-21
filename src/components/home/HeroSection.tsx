@@ -24,13 +24,8 @@ export const HeroSection: React.FC = () => {
 
       <div className="relative z-10 max-w-7xl mx-auto space-y-8">
         
-        {/* Indonesian Cultural Heritage Kicker */}
+        {/* Hero Title and Description */}
         <div className="text-center pt-6 sm:pt-10 max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-white text-xs font-semibold tracking-wider uppercase">
-            <span className="w-2 h-2 rounded-full bg-[#5F429A] animate-pulse" />
-            <span>{t('LÍNEA AÉREA NACIONAL DE INDONESIA', 'NATIONAL INDONESIAN AIRLINE')}</span>
-          </div>
-
           <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white uppercase text-balance leading-tight drop-shadow-sm">
             TODO A UN VUELO DE DISTANCIA.
           </h1>

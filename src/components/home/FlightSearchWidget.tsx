@@ -312,38 +312,41 @@ export const FlightSearchWidget: React.FC = () => {
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#263A79] bg-neutral-100 hover:bg-neutral-200/70 rounded-xl transition-colors"
               >
                 <Armchair className="w-3.5 h-3.5 text-[#5F429A]" />
-                <span>{cabinClass}</span>
+                <span>
+                  {cabinClass === 'Economy' && 'Economy'}
+                  {cabinClass === 'Premium' && 'Premium Economy'}
+                  {cabinClass === 'Business' && (language === 'ES' ? 'Business Class' : 'Business Class')}
+                  {cabinClass === 'First' && (language === 'ES' ? 'First Class' : 'First Class')}
+                </span>
                 <ChevronDown className="w-3 h-3 text-[#465B71]" />
               </button>
 
               {isClassOpen && (
-                <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-neutral-200 py-1.5 z-50">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCabinClass('Economy');
-                      setIsClassOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-left hover:bg-neutral-50 ${
-                      cabinClass === 'Economy' ? 'text-[#5F429A] font-bold' : 'text-[#191A23]'
-                    }`}
-                  >
-                    <span>Economy</span>
-                    {cabinClass === 'Economy' && <Check className="w-4 h-4 text-[#5F429A]" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCabinClass('Premium');
-                      setIsClassOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-left hover:bg-neutral-50 ${
-                      cabinClass === 'Premium' ? 'text-[#5F429A] font-bold' : 'text-[#191A23]'
-                    }`}
-                  >
-                    <span>Premium Economy</span>
-                    {cabinClass === 'Premium' && <Check className="w-4 h-4 text-[#5F429A]" />}
-                  </button>
+                <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-neutral-200 py-1.5 z-50">
+                  {[
+                    { id: 'Economy' as CabinClass, label: 'Economy', desc: t('Tarifa accesible y práctica', 'Best low-cost value') },
+                    { id: 'Premium' as CabinClass, label: 'Premium Economy', desc: t('Espacio extra y prioridad', 'Extra legroom & priority') },
+                    { id: 'Business' as CabinClass, label: 'Business Class', desc: t('Camas lie-flat y lounge VIP', 'Lie-flat bed & VIP lounge') },
+                    { id: 'First' as CabinClass, label: 'First Class', desc: t('Suites privadas y chofer VIP', 'Private suite & concierge') },
+                  ].map(item => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setCabinClass(item.id);
+                        setIsClassOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs text-left hover:bg-neutral-50 transition-colors ${
+                        cabinClass === item.id ? 'bg-[#FAF9FD] text-[#5F429A] font-bold' : 'text-[#191A23]'
+                      }`}
+                    >
+                      <div>
+                        <div className="font-bold">{item.label}</div>
+                        <div className="text-[10px] text-[#465B71]">{item.desc}</div>
+                      </div>
+                      {cabinClass === item.id && <Check className="w-4 h-4 text-[#5F429A] shrink-0 ml-2" />}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -425,8 +428,12 @@ export const FlightSearchWidget: React.FC = () => {
                         className="w-full h-12 px-3 bg-white border border-neutral-300 rounded-xl text-xs font-bold text-[#191A23] focus:ring-1 focus:ring-[#5F429A]"
                       >
                         {AIRPORTS.map(a => (
-                          <option key={a.code} value={a.code}>
-                            {a.city} ({a.code})
+                          <option 
+                            key={a.code} 
+                            value={a.code}
+                            disabled={a.code === seg.origin.code}
+                          >
+                            {a.city} ({a.code}) {a.code === seg.origin.code ? `(${t('Origen', 'Origin')})` : ''}
                           </option>
                         ))}
                       </select>
@@ -516,6 +523,13 @@ export const FlightSearchWidget: React.FC = () => {
                             setOriginAirport(airport);
                             setIsOriginOpen(false);
                             setOriginFilter('');
+                            // Auto-shift destination if it equals the newly selected origin
+                            if (destinationAirport.code === airport.code) {
+                              const alternative = AIRPORTS.find(a => a.code !== airport.code);
+                              if (alternative) {
+                                setDestinationAirport(alternative);
+                              }
+                            }
                           }}
                           className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-xs transition-colors hover:bg-[#FAF9FD] ${
                             originAirport.code === airport.code ? 'bg-[#FAF9FD] text-[#5F429A] font-bold' : 'text-[#191A23]'
@@ -587,26 +601,43 @@ export const FlightSearchWidget: React.FC = () => {
                       />
                     </div>
                     <div className="max-h-60 overflow-y-auto space-y-1">
-                      {filteredDestAirports.map(airport => (
-                        <button
-                          key={airport.code}
-                          type="button"
-                          onClick={() => {
-                            setDestinationAirport(airport);
-                            setIsDestOpen(false);
-                            setDestFilter('');
-                          }}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-xs transition-colors hover:bg-[#FAF9FD] ${
-                            destinationAirport.code === airport.code ? 'bg-[#FAF9FD] text-[#5F429A] font-bold' : 'text-[#191A23]'
-                          }`}
-                        >
-                          <div className="min-w-0 flex-1 pr-2">
-                            <div className="font-semibold truncate">{airport.city} ({airport.code})</div>
-                            <div className="text-[10px] text-[#465B71] truncate">{airport.name}</div>
-                          </div>
-                          <span className="text-[10px] text-[#465B71] shrink-0">{airport.country}</span>
-                        </button>
-                      ))}
+                      {filteredDestAirports.map(airport => {
+                        const isSameAsOrigin = airport.code === originAirport.code;
+                        const isSelected = destinationAirport.code === airport.code;
+                        return (
+                          <button
+                            key={airport.code}
+                            type="button"
+                            disabled={isSameAsOrigin}
+                            onClick={() => {
+                              if (isSameAsOrigin) return;
+                              setDestinationAirport(airport);
+                              setIsDestOpen(false);
+                              setDestFilter('');
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-xs transition-colors ${
+                              isSameAsOrigin
+                                ? 'opacity-40 cursor-not-allowed bg-neutral-100/70 text-neutral-400'
+                                : isSelected
+                                ? 'bg-[#FAF9FD] text-[#5F429A] font-bold'
+                                : 'text-[#191A23] hover:bg-[#FAF9FD]'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1 pr-2">
+                              <div className="font-semibold truncate flex items-center gap-1.5">
+                                <span>{airport.city} ({airport.code})</span>
+                                {isSameAsOrigin && (
+                                  <span className="text-[9px] bg-neutral-200 text-neutral-600 px-1.5 py-0.5 rounded font-normal">
+                                    {t('Origen actual', 'Current origin')}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-[#465B71] truncate">{airport.name}</div>
+                            </div>
+                            <span className="text-[10px] text-[#465B71] shrink-0">{airport.country}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

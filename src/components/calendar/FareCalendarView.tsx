@@ -115,6 +115,13 @@ export const FareCalendarView: React.FC = () => {
     ? calculateDuration(departureDate, returnDate)
     : null;
 
+  // Maximum allowed return date: exactly 1 month (30 days) from departureDate
+  const maxAllowedReturnDate = departureDate ? (() => {
+    const d = new Date(departureDate + 'T00:00:00');
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split('T')[0];
+  })() : null;
+
   // Two-step day selection: first departure, then return to choose number of days
   const handleSelectDay = (dateStr: string) => {
     if (tripType === 'oneWay') {
@@ -125,8 +132,13 @@ export const FareCalendarView: React.FC = () => {
     if (pickingTarget === 'departure') {
       // Step 1: User selects departure box
       setDepartureDate(dateStr);
-      if (returnDate && returnDate < dateStr) {
-        setReturnDate('');
+      if (returnDate) {
+        const dRet = new Date(returnDate + 'T00:00:00').getTime();
+        const dDep = new Date(dateStr + 'T00:00:00').getTime();
+        const maxTime = dDep + (30 * 24 * 60 * 60 * 1000);
+        if (dRet < dDep || dRet > maxTime) {
+          setReturnDate('');
+        }
       }
       // Automatically advance to Step 2: User selects return box
       setPickingTarget('return');
@@ -141,6 +153,10 @@ export const FareCalendarView: React.FC = () => {
         setReturnDate('');
         setPickingTarget('return');
       } else {
+        // Enforce maximum 1 month (30 days) limit from departure date
+        if (maxAllowedReturnDate && dateStr > maxAllowedReturnDate) {
+          return;
+        }
         // Valid return box selected!
         setReturnDate(dateStr);
       }
@@ -214,7 +230,13 @@ export const FareCalendarView: React.FC = () => {
                 value={originAirport.code}
                 onChange={e => {
                   const a = AIRPORTS.find(air => air.code === e.target.value);
-                  if (a) setOriginAirport(a);
+                  if (a) {
+                    setOriginAirport(a);
+                    if (destinationAirport.code === a.code) {
+                      const alt = AIRPORTS.find(air => air.code !== a.code);
+                      if (alt) setDestinationAirport(alt);
+                    }
+                  }
                 }}
                 className="w-full h-12 px-3 bg-neutral-50 border border-neutral-300 rounded-xl font-bold text-sm text-[#263A79]"
               >
@@ -244,13 +266,20 @@ export const FareCalendarView: React.FC = () => {
               <select
                 value={destinationAirport.code}
                 onChange={e => {
+                  if (e.target.value === originAirport.code) return;
                   const a = AIRPORTS.find(air => air.code === e.target.value);
                   if (a) setDestinationAirport(a);
                 }}
                 className="w-full h-12 px-3 bg-neutral-50 border border-neutral-300 rounded-xl font-bold text-sm text-[#263A79]"
               >
                 {AIRPORTS.map(a => (
-                  <option key={a.code} value={a.code}>{a.city} ({a.code}) - {a.country}</option>
+                  <option 
+                    key={a.code} 
+                    value={a.code}
+                    disabled={a.code === originAirport.code}
+                  >
+                    {a.city} ({a.code}) {a.code === originAirport.code ? `(${t('Origen actual', 'Current origin')})` : `- ${a.country}`}
+                  </option>
                 ))}
               </select>
             </div>
@@ -366,6 +395,23 @@ export const FareCalendarView: React.FC = () => {
 
           </div>
 
+          {/* 1-Month Limit Restriction Banner */}
+          {departureDate && maxAllowedReturnDate && tripType === 'roundTrip' && (
+            <div className="bg-amber-50/80 border border-amber-200/90 rounded-2xl px-4 py-2.5 flex items-center justify-between text-xs text-amber-950">
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-md text-[10px] uppercase">
+                  {t('Límite de tarifas flexibles', 'Flexible fare limit')}
+                </span>
+                <span>
+                  {t(
+                    `Las tarifas flexibles y fechas de regreso están limitadas a un máximo de 1 mes (hasta el ${maxAllowedReturnDate}).`,
+                    `Flexible fares and return dates are restricted to a maximum of 1 month from departure (until ${maxAllowedReturnDate}).`
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Duration Indicator */}
           {activeDuration && (
             <div className="bg-emerald-50 border border-emerald-200/90 rounded-2xl px-4 py-2.5 flex items-center justify-between text-xs text-emerald-950 font-bold">
@@ -425,6 +471,13 @@ export const FareCalendarView: React.FC = () => {
                 fare.date <= hoveredDate;
 
               const isPast = fare.date < '2026-10-06';
+              const isExceeded1Month = Boolean(
+                pickingTarget === 'return' &&
+                departureDate &&
+                maxAllowedReturnDate &&
+                fare.date > maxAllowedReturnDate
+              );
+              const isDisabled = isPast || isExceeded1Month;
 
               let cardStyle = 'bg-white hover:bg-[#FAF9FD] text-[#191A23] border border-neutral-200/90';
               if (isSelectedDep) {
@@ -443,19 +496,27 @@ export const FareCalendarView: React.FC = () => {
                 <div
                   key={fare.date}
                   onMouseEnter={() => {
-                    if (pickingTarget === 'return') {
+                    if (pickingTarget === 'return' && !isDisabled) {
                       setHoveredDate(fare.date);
                     }
                   }}
-                  onClick={() => !isPast && handleSelectDay(fare.date)}
-                  className={`h-16 sm:h-24 md:h-28 p-1 sm:p-2.5 rounded-xl sm:rounded-2xl transition-all flex flex-col justify-between text-left relative overflow-hidden min-w-0 ${
-                    isPast ? 'opacity-30 cursor-not-allowed bg-neutral-100' : `${cardStyle} cursor-pointer hover:scale-[1.02]`
+                  onClick={() => !isDisabled && handleSelectDay(fare.date)}
+                  title={isExceeded1Month ? t('Máximo 1 mes de estadía desde la salida', 'Maximum 1 month stay from departure') : undefined}
+                  className={`h-14 sm:h-24 md:h-28 p-1 sm:p-2.5 rounded-xl sm:rounded-2xl transition-all flex flex-col justify-between text-left relative overflow-hidden min-w-0 ${
+                    isDisabled ? 'opacity-25 cursor-not-allowed bg-neutral-100/70 border-neutral-200' : `${cardStyle} cursor-pointer hover:scale-[1.02]`
                   }`}
                 >
                   <div className="flex items-center justify-between gap-1 min-w-0">
                     <span className={`text-xs sm:text-base font-extrabold shrink-0 ${isSelectedDep || isSelectedRet ? 'text-white' : 'text-[#191A23]'}`}>
                       {fare.dayNumber}
                     </span>
+
+                    {/* Exceeded 30 days indicator */}
+                    {isExceeded1Month && (
+                      <span className="text-[7px] sm:text-[8px] font-bold text-neutral-400 bg-neutral-200/60 px-1 py-0.5 rounded leading-none shrink-0">
+                        &gt;30d
+                      </span>
+                    )}
 
                     {/* Best price badge */}
                     {fare.isLowest && !isPast && !isSelectedDep && !isSelectedRet && (

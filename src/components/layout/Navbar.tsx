@@ -58,7 +58,7 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Zone 2: 4-6 Clean Text Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 shrink-0">
             
             {/* VIAJAR */}
             <div 
@@ -68,7 +68,7 @@ export const Navbar: React.FC = () => {
             >
               <button 
                 onClick={() => handleNavClick('destinations')}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold tracking-wide transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold tracking-wide transition-colors whitespace-nowrap shrink-0 ${
                   currentPage === 'destinations' || currentPage === 'mudik-destino'
                     ? 'text-[#5F429A] border-b-2 border-[#5F429A]'
                     : 'text-[#263A79] hover:text-[#5F429A]'
@@ -132,7 +132,7 @@ export const Navbar: React.FC = () => {
             >
               <button 
                 onClick={() => handleNavClick('manage-booking')}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold tracking-wide transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold tracking-wide transition-colors whitespace-nowrap shrink-0 ${
                   currentPage === 'manage-booking' || currentPage === 'check-in' || currentPage === 'flight-status'
                     ? 'text-[#5F429A] border-b-2 border-[#5F429A]'
                     : 'text-[#263A79] hover:text-[#5F429A]'
@@ -186,7 +186,7 @@ export const Navbar: React.FC = () => {
             >
               <button 
                 onClick={() => handleNavClick('onboard')}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold tracking-wide transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold tracking-wide transition-colors whitespace-nowrap shrink-0 ${
                   currentPage === 'onboard' || currentPage === 'baggage' || currentPage === 'mudik-lounge'
                     ? 'text-[#5F429A] border-b-2 border-[#5F429A]'
                     : 'text-[#263A79] hover:text-[#5F429A]'
@@ -235,7 +235,7 @@ export const Navbar: React.FC = () => {
             {/* MUDIK POINTS */}
             <button 
               onClick={() => handleNavClick('mudik-points')}
-              className={`px-3 py-2 text-sm font-semibold tracking-wide transition-colors ${
+              className={`px-3 py-2 text-sm font-semibold tracking-wide transition-colors whitespace-nowrap shrink-0 ${
                 currentPage === 'mudik-points'
                   ? 'text-[#5F429A] border-b-2 border-[#5F429A]'
                   : 'text-[#263A79] hover:text-[#5F429A]'
@@ -247,7 +247,7 @@ export const Navbar: React.FC = () => {
             {/* SOBRE NOSOTROS */}
             <button 
               onClick={() => handleNavClick('about-us')}
-              className={`px-3 py-2 text-sm font-semibold tracking-wide transition-colors ${
+              className={`px-3 py-2 text-sm font-semibold tracking-wide transition-colors whitespace-nowrap shrink-0 ${
                 currentPage === 'about-us'
                   ? 'text-[#5F429A] border-b-2 border-[#5F429A]'
                   : 'text-[#263A79] hover:text-[#5F429A]'
@@ -259,7 +259,7 @@ export const Navbar: React.FC = () => {
             {/* AYUDA */}
             <button 
               onClick={() => handleNavClick('help')}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold tracking-wide transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold tracking-wide transition-colors whitespace-nowrap shrink-0 ${
                 currentPage === 'help'
                   ? 'text-[#5F429A] border-b-2 border-[#5F429A]'
                   : 'text-[#263A79] hover:text-[#5F429A]'
@@ -275,21 +275,27 @@ export const Navbar: React.FC = () => {
           <div className="hidden lg:flex items-center gap-4">
             
             {/* Language & Currency Segments */}
-            <div className="flex items-center gap-1 text-xs font-semibold bg-neutral-100/90 rounded-lg p-1 text-[#465B71]">
+            <div className="flex items-center gap-1.5 text-xs font-bold bg-neutral-100 rounded-xl p-1 text-[#465B71]">
               <button 
+                type="button"
                 onClick={() => setLanguage(language === 'ES' ? 'EN' : 'ES')}
-                className="px-2 py-1 rounded bg-white text-[#263A79] shadow-xs hover:text-[#5F429A] transition-colors"
-                title={t('Cambiar idioma', 'Switch language')}
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                  language === 'ES' ? 'bg-[#5F429A] text-white shadow-xs' : 'bg-white text-[#263A79] hover:text-[#5F429A]'
+                }`}
+                title={t('Cambiar a Inglés', 'Switch to Spanish')}
               >
-                {language}
+                {language === 'ES' ? 'ES' : 'EN'}
               </button>
-              <span className="text-neutral-300">/</span>
+              <span className="text-neutral-300">·</span>
               <button 
-                onClick={() => setCurrency(currency === 'USD' ? 'IDR' : 'USD')}
-                className="px-2 py-1 rounded bg-white text-[#263A79] shadow-xs hover:text-[#5F429A] transition-colors"
-                title={t('Cambiar moneda', 'Switch currency')}
+                type="button"
+                onClick={() => setCurrency(currency === 'USD' ? 'ARS' : 'USD')}
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                  currency === 'ARS' ? 'bg-[#25356D] text-white shadow-xs' : 'bg-white text-[#263A79] hover:text-[#5F429A]'
+                }`}
+                title={t('Alternar entre Dólares y Pesos Argentinos', 'Switch between USD and ARS')}
               >
-                {currency}
+                {currency === 'USD' ? 'USD $' : 'ARS $'}
               </button>
             </div>
 
@@ -331,19 +337,25 @@ export const Navbar: React.FC = () => {
             </button>
           </div>
 
-          {/* Mobile hamburger button */}
-          <div className="flex items-center gap-2 lg:hidden">
+          {/* Mobile switcher & hamburger buttons */}
+          <div className="flex items-center gap-1.5 lg:hidden">
             <button 
+              type="button"
               onClick={() => setLanguage(language === 'ES' ? 'EN' : 'ES')}
-              className="px-2 py-1 text-xs font-bold rounded bg-neutral-100 text-[#263A79]"
+              className={`px-2 py-1 text-xs font-bold rounded-lg transition-colors ${
+                language === 'ES' ? 'bg-[#5F429A] text-white' : 'bg-neutral-100 text-[#263A79]'
+              }`}
             >
               {language}
             </button>
             <button 
-              onClick={() => setCurrency(currency === 'USD' ? 'IDR' : 'USD')}
-              className="px-2 py-1 text-xs font-bold rounded bg-neutral-100 text-[#263A79]"
+              type="button"
+              onClick={() => setCurrency(currency === 'USD' ? 'ARS' : 'USD')}
+              className={`px-2 py-1 text-xs font-bold rounded-lg transition-colors ${
+                currency === 'ARS' ? 'bg-[#25356D] text-white' : 'bg-neutral-100 text-[#263A79]'
+              }`}
             >
-              {currency}
+              {currency === 'USD' ? 'USD' : 'ARS'}
             </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
