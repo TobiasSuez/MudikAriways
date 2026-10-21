@@ -18,7 +18,7 @@ import {
   TrendingDown
 } from 'lucide-react';
 import { PageView } from '../../types';
-import { CompanyLogo } from './CompanyLogo';
+import { CompanyLogo } from '../CompanyLogo';
 
 export const Navbar: React.FC = () => {
   const { 
