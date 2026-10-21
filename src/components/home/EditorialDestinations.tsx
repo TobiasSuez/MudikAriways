@@ -101,7 +101,7 @@ export const EditorialDestinations: React.FC = () => {
               <div className="px-6 pb-6 pt-2 flex items-center justify-between border-t border-neutral-100 mt-2 bg-[#FAF9FD]/50">
                 <div>
                   <span className="text-[10px] text-[#465B71] block uppercase tracking-wider">
-                    {t('Desde Jakarta', 'From Jakarta')}
+                    {t('Desde Buenos Aires', 'From Buenos Aires')}
                   </span>
                   <div className="font-extrabold text-[#263A79] text-base tabular-nums">
                     {formatPrice(dest.priceFromUSD)}
