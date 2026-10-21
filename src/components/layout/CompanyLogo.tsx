@@ -1,6 +1,5 @@
 import React from 'react';
-import logoImg from 'layout/logo.svg';
-/* 
+import logoImg from './logo.svg';/* 
 
  * =========================================================================
  * LOGOTIPO CORPORATIVO DE MUDIK AIRWAYS (ARCHIVO ESTÁTICO)
